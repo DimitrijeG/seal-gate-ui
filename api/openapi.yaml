@@ -1,0 +1,1733 @@
+openapi: 3.1.0
+
+info:
+  title: seal-gate
+  version: 0.1.0
+  summary: Secrets-management service with Shamir-based unsealing.
+  description: >
+    Lists only operations that are implemented. Each one is added in the same
+    change as its handler. Every JSON response carries
+    `Cache-Control: no-store`, since a body may hold a secret, a share or a
+    token.
+
+servers:
+  - url: /v1
+    description: Version prefix. It is part of every route, not a host.
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: system
+    description: >
+      Initialization, sealing and health. All but seal are open and reachable
+      while sealed.
+  - name: secrets
+    description: Secret values by path. Every operation needs the instance unsealed.
+  - name: policies
+    description: Access policies by name. Every operation needs the instance unsealed.
+  - name: entities
+    description: >
+      Identities that hold policies and group memberships, by generated ID.
+      Every operation needs the instance unsealed.
+  - name: groups
+    description: >
+      Policy sets that entities join by naming the group's ID. Membership
+      lives on the entity, so a group has no member list. Every operation
+      needs the instance unsealed.
+  - name: auth
+    description: >
+      Operations on the token presented with the request. Holding it is the
+      proof, so none needs a capability. Every operation needs the instance
+      unsealed.
+  - name: users
+    description: >
+      Usernames with passwords, each logging in as an entity. Every operation
+      needs the instance unsealed. Login is open: the password is the proof.
+
+paths:
+  /sys/init:
+    post:
+      operationId: init
+      tags: [system]
+      summary: Initialize the instance and return its unseal shares and root token.
+      description: >
+        Open by design: no token can exist before initialization. The shares
+        and the root token in the response are the only copy that will ever
+        exist; the server keeps only a hash of the token, and none of the
+        shares.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitRequest"
+      responses:
+        "200":
+          description: Initialized. The instance stays sealed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 16384 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sys/unseal:
+    post:
+      operationId: unseal
+      tags: [system]
+      summary: Submit one unseal share, or discard the buffered ones.
+      description: >
+        Open by design: a sealed instance cannot check a token. Shares are
+        buffered until the threshold is reached, then combined; a failed
+        combination discards the buffer. A reset discards it on request, so
+        a partial unseal can start over.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnsealRequest"
+      responses:
+        "200":
+          description: >
+            Share accepted or buffer discarded. The status shows the progress,
+            or that the instance is unsealed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 16384 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sys/seal:
+    post:
+      operationId: seal
+      tags: [system]
+      summary: Seal the instance.
+      description: >
+        Discards the key and any buffered shares. On a sealed or uninitialized
+        instance no token can be checked, so a request with one is 503; to
+        discard a partial unseal, reset it through `/sys/unseal`. Needs
+        `update` on `system/seal`.
+      responses:
+        "204":
+          description: Sealed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sys/status:
+    get:
+      operationId: status
+      tags: [system]
+      summary: Report whether the instance is initialized and sealed.
+      description: >
+        Open by design: operators read it before they can hold a token, to
+        know whether to init or unseal.
+      security: []
+      responses:
+        "200":
+          description: The current state. Before init, `shares` and `threshold` are absent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sys/health:
+    get:
+      operationId: health
+      tags: [system]
+      summary: Report whether the instance can serve requests.
+      description: >
+        Open by design, for load balancers and probes. Only says yes or no;
+        the detail is in `/sys/status`.
+      security: []
+      responses:
+        "204":
+          description: Unsealed.
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /secrets:
+    get:
+      operationId: listSecrets
+      tags: [secrets]
+      summary: List the paths of stored secrets, optionally under a prefix.
+      description: >
+        Returns every path under the prefix, at any depth, never the values.
+        A secret written by `PUT` whose TTL has passed is left out.
+        Needs `list` on `secrets/<prefix>`.
+      parameters:
+        - name: prefix
+          in: query
+          required: false
+          description: >
+            Absent or empty lists every secret. Otherwise a valid secret path
+            followed by `/`, so `db/` matches `db/password` but not `db` or
+            `dbx/key`.
+          schema:
+            type: string
+            maxLength: 257
+          example: db/
+      responses:
+        "200":
+          description: The matching paths.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /secrets/generate/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: >
+          The new secret's path, under the same rules as `/secrets/{path}`.
+        schema:
+          type: string
+          maxLength: 256
+        example: db/password
+
+    post:
+      operationId: generateSecret
+      tags: [secrets]
+      summary: Create a secret of random bytes and return it once.
+      description: >
+        Refuses an existing path. Needs `create` on `secrets/<path>`. The
+        secret reads back like any other; a later `PUT` over it makes it an
+        ordinary stored secret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRequest"
+      responses:
+        "201":
+          description: Created; the value is not shown again by this call.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: A secret already exists at the path.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 1024 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /secrets/rotate/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: >
+          The secret's path, under the same rules as `/secrets/{path}`.
+        schema:
+          type: string
+          maxLength: 256
+        example: db/password
+
+    post:
+      operationId: rotateSecret
+      tags: [secrets]
+      summary: Replace a generated secret with fresh random bytes and return them once.
+      description: >
+        Only a secret made by `generate` rotates: the new value has the old
+        one's length. Rotation replaces the value; the old one is gone. The next
+        rotation is due one TTL from now, if the secret has one. Needs
+        `rotate` on `secrets/<path>`. Takes no request body.
+      responses:
+        "200":
+          description: Rotated; the value is not shown again by this call.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: >
+            The secret was not generated (it was written by `PUT`), so it is
+            left as it is.
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /secrets/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: >
+          The secret's path, which may contain `/` (OpenAPI cannot express a
+          multi-segment parameter). Segments of `[A-Za-z0-9._-]`, none empty,
+          `.` or `..`; no leading or trailing `/`; at most 256 bytes.
+        schema:
+          type: string
+          maxLength: 256
+        example: db/password
+
+    put:
+      operationId: putSecret
+      tags: [secrets]
+      summary: Store a secret, replacing any value already at the path.
+      description: >
+        Creates or replaces; the response is the same either way. Needs
+        `create` on `secrets/<path>` when the path is missing, `update` when
+        it exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecretRequest"
+      responses:
+        "204":
+          description: Stored.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: >
+            The request body exceeds 88408 bytes, or the decoded value exceeds
+            65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      operationId: getSecret
+      tags: [secrets]
+      summary: Read a secret.
+      description: >
+        Needs `read` on `secrets/<path>`. A secret written by `PUT` is not
+        found once its TTL has passed, whether or not it has been deleted.
+        Besides the value, says whether the secret was generated (and so
+        rotates) and the TTL it was written with.
+      responses:
+        "200":
+          description: The secret's value and kind.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretReadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteSecret
+      tags: [secrets]
+      summary: Delete a secret.
+      description: >
+        Idempotent: deleting a missing secret also succeeds. Needs `delete`
+        on `secrets/<path>`.
+      responses:
+        "204":
+          description: Deleted, or there was nothing to delete.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /policies:
+    get:
+      operationId: listPolicies
+      tags: [policies]
+      summary: List the names of stored policies.
+      description: >
+        Returns policy names only, never their records, sorted by byte order;
+        reading one is a separate request with its own check. Needs `list`
+        on `system/policies`; a grant on `system/policies/*` does not reach the
+        collection.
+      responses:
+        "200":
+          description: Every stored policy name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: >
+            The path is unclean, as in `/policies/x/..`; it is refused, not
+            redirected.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /policies/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        description: >
+          The policy's name: one segment of `[A-Za-z0-9._-]`, not `.` or `..`,
+          at most 128 bytes.
+        schema:
+          type: string
+          pattern: "^(?!\\.\\.?$)[A-Za-z0-9._-]+$"
+          maxLength: 128
+        example: dev
+
+    put:
+      operationId: putPolicy
+      tags: [policies]
+      summary: Store a policy, replacing any policy already under the name.
+      description: >
+        Creates or replaces; the response is the same either way. The name is
+        taken from the path only. Needs `update` on `system/policies/<name>`,
+        whether or not the policy exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyRequest"
+      responses:
+        "204":
+          description: Stored.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      operationId: getPolicy
+      tags: [policies]
+      summary: Read a policy.
+      description: >
+        Needs `read` on `system/policies/<name>`.
+      responses:
+        "200":
+          description: The policy's rules.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deletePolicy
+      tags: [policies]
+      summary: Delete a policy.
+      description: >
+        Idempotent: deleting a missing policy also succeeds. Needs `delete`
+        on `system/policies/<name>`.
+      responses:
+        "204":
+          description: Deleted, or there was nothing to delete.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /entities:
+    get:
+      operationId: listEntities
+      tags: [entities]
+      summary: List stored entities by ID and alias.
+      description: >
+        Returns each entity's ID and alias only, never its policies or groups,
+        so a listing never reveals what an entity is granted; reading one is a
+        separate request with its own check. Sorted by ID in byte order. One
+        unreadable entity fails the whole listing. Needs `list` on
+        `system/entities`; a grant on `system/entities/*` does not reach the
+        collection.
+      responses:
+        "200":
+          description: Every stored entity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntityListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: >
+            The path is unclean, as in `/entities/x/..`; it is refused, not
+            redirected.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createEntity
+      tags: [entities]
+      summary: Create an entity under a newly generated ID.
+      description: >
+        The server chooses the ID and never reuses one, so a deleted entity's
+        tokens can never authenticate again. Needs `create` on
+        `system/entities`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntityRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateEntityResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: Another entity holds the alias.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /entities/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The entity's ID, as returned on creation.
+        schema:
+          $ref: "#/components/schemas/ID"
+
+    get:
+      operationId: getEntity
+      tags: [entities]
+      summary: Read an entity.
+      description: >
+        Needs `read` on `system/entities/<id>`.
+      responses:
+        "200":
+          description: The entity's policies and groups.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntityResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      operationId: updateEntity
+      tags: [entities]
+      summary: Replace an existing entity's alias, policies and groups.
+      description: >
+        Never creates: an ID that does not exist is not found. The ID is taken
+        from the path only. Needs `update` on `system/entities/<id>`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntityRequest"
+      responses:
+        "204":
+          description: Updated.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: Another entity holds the alias.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteEntity
+      tags: [entities]
+      summary: Delete an entity, revoking its tokens.
+      description: >
+        Idempotent: deleting a missing entity also succeeds. Needs `delete`
+        on `system/entities/<id>`.
+      responses:
+        "204":
+          description: Deleted, or there was nothing to delete.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /entities/{id}/tokens:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the entity the token authenticates as.
+        schema:
+          $ref: "#/components/schemas/ID"
+
+    post:
+      operationId: createToken
+      tags: [entities]
+      summary: Issue a token for an entity.
+      description: >
+        The request body is optional; without one the token lives for the
+        configured default TTL. The token in the response is the only copy: the
+        server stores only its hash. It is refused from `expires_at` on.
+        Deleting the entity revokes it. Needs `create` on
+        `system/entities/<id>/tokens`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTokenRequest"
+      responses:
+        "201":
+          description: Issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 1024 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/token/revoke:
+    post:
+      operationId: revokeToken
+      tags: [auth]
+      summary: Revoke the token presented with the request.
+      description: >
+        Takes no request body. From then on the token is refused like one
+        never issued. The root token is not stored, so it cannot be revoked.
+      responses:
+        "204":
+          description: Revoked.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: The presented token is the root token.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/token/rotate:
+    post:
+      operationId: rotateToken
+      tags: [auth]
+      summary: Exchange the presented token for a new one.
+      description: >
+        The new token authenticates as the same entity, with a fresh expiry;
+        the presented one is then refused like one never issued. The request
+        body is optional; without one the new token lives for the configured
+        default TTL. If the presented token cannot be revoked, the rotation
+        fails and the presented token keeps working. The root token is not
+        stored, so it cannot be rotated.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTokenRequest"
+      responses:
+        "201":
+          description: Rotated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 1024 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/token/self:
+    get:
+      operationId: lookupSelf
+      tags: [auth]
+      summary: Report whom the presented token authenticates as.
+      description: >
+        Needs no capability: holding the token is the proof. The root token is
+        reported as `{"root": true}` alone; any other token as its entity, the
+        entity's alias if it has one, and the token's expiry.
+      responses:
+        "200":
+          description: The presented token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenSelfResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [users]
+      summary: Exchange a username and password for a token.
+      description: >
+        Open by design: no token exists before login. The token authenticates
+        as the user's entity and lives for the configured default TTL. An
+        unknown user, a wrong password and a deleted entity are refused alike.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "201":
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: >
+            The username or password is wrong, or the user's entity was
+            deleted. The message does not say which.
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+              example: Bearer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 8192 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List stored users by name and entity.
+      description: >
+        Returns each username and the entity it logs in as, never a password
+        hash, sorted by name in byte order. One unreadable user fails the whole
+        listing. Needs `list` on `system/users`; a grant on `system/users/*`
+        does not reach the collection.
+      responses:
+        "200":
+          description: Every stored user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: >
+            The path is unclean, as in `/auth/users/x/..`; it is refused, not
+            redirected.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/users/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        description: >
+          The username: one segment of `[a-z0-9._-]`, not `.` or `..`, at most
+          128 bytes. Lowercase only, so two users cannot differ by case.
+        schema:
+          type: string
+          pattern: "^(?!\\.\\.?$)[a-z0-9._-]+$"
+          maxLength: 128
+        example: alice
+
+    put:
+      operationId: setUser
+      tags: [users]
+      summary: Store a user, replacing any user already under the name.
+      description: >
+        Creates or replaces, password included; the response is the same
+        either way. The name is taken from the path only. Only the password's
+        hash is stored, and it is never returned. Needs `update` on
+        `system/users/<name>`, whether or not the user exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+      responses:
+        "204":
+          description: Stored.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+          description: No entity has the given ID.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 8192 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Read the entity a user logs in as.
+      description: >
+        Returns the entity ID only, never the password hash. Needs `read` on
+        `system/users/<name>`.
+      responses:
+        "200":
+          description: The user's entity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+          description: No user has the given name.
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user.
+      description: >
+        Idempotent: deleting a missing user also succeeds. The entity and its
+        tokens are left as they are. Needs `delete` on `system/users/<name>`.
+      responses:
+        "204":
+          description: Deleted, or there was nothing to delete.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /groups:
+    get:
+      operationId: listGroups
+      tags: [groups]
+      summary: List stored groups by ID and alias.
+      description: >
+        Returns each group's ID and alias only, never its policies, so a
+        listing never reveals what a group grants; reading one is a separate
+        request with its own check. Sorted by ID in byte order. One unreadable
+        group fails the whole listing. Needs `list` on `system/groups`; a grant
+        on `system/groups/*` does not reach the collection.
+      responses:
+        "200":
+          description: Every stored group.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: >
+            The path is unclean, as in `/groups/x/..`; it is refused, not
+            redirected.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createGroup
+      tags: [groups]
+      summary: Create a group under a newly generated ID.
+      description: >
+        The server chooses the ID and never reuses one, so a deleted group
+        cannot come back and re-grant its policies to entities that still
+        name it. Needs `create` on `system/groups`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateGroupResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: Another group holds the alias.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The group's ID, as returned on creation.
+        schema:
+          $ref: "#/components/schemas/ID"
+
+    get:
+      operationId: getGroup
+      tags: [groups]
+      summary: Read a group.
+      description: >
+        Needs `read` on `system/groups/<id>`.
+      responses:
+        "200":
+          description: The group's alias and policies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      operationId: updateGroup
+      tags: [groups]
+      summary: Replace an existing group's alias and policies.
+      description: >
+        Never creates: an ID that does not exist is not found. The ID is taken
+        from the path only. Needs `update` on `system/groups/<id>`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "204":
+          description: Updated.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+          description: Another group holds the alias.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+          description: The request body exceeds 65536 bytes.
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteGroup
+      tags: [groups]
+      summary: Delete a group.
+      description: >
+        Idempotent: deleting a missing group also succeeds. Entities that name
+        it keep the ID, which grants nothing. Needs `delete` on
+        `system/groups/<id>`.
+      responses:
+        "204":
+          description: Deleted, or there was nothing to delete.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        A token as returned by init, login, or token issuing or rotation, in
+        standard base64.
+        Every operation needs one unless it says it is open.
+
+  responses:
+    Unauthorized:
+      description: >
+        The token is missing, malformed or unknown. The message does not say
+        which.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          example: Bearer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: >
+        The token is valid, but none of its policies grants the capability
+        the operation needs, or one denies it.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest:
+      description: The request path, body, or its values are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Nothing exists at the path.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Sealed:
+      description: Sealed or uninitialized; either way, there is no key to serve with.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: The instance is in the wrong state for this operation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    PayloadTooLarge:
+      description: The request body exceeds this operation's limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnsupportedMediaType:
+      description: The request body is not declared as application/json.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: An internal failure. Details are logged, never sent.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    InitRequest:
+      type: object
+      description: How many shares to make, and how many unseal needs.
+      required: [shares, threshold]
+      properties:
+        shares:
+          type: integer
+          minimum: 2
+          maximum: 255
+        threshold:
+          type: integer
+          minimum: 2
+          maximum: 255
+          description: At most `shares`.
+      additionalProperties: false
+
+    InitResponse:
+      type: object
+      required: [shares, root_token]
+      properties:
+        shares:
+          type: array
+          items:
+            type: string
+            contentEncoding: base64
+        root_token:
+          type: string
+          contentEncoding: base64
+          description: 32 bytes. Returned only here; it cannot be recovered later.
+      additionalProperties: false
+
+    UnsealRequest:
+      type: object
+      description: Exactly one of a share or `reset` set to true; both together is a 400.
+      properties:
+        share:
+          type: string
+          contentEncoding: base64
+        reset:
+          type: boolean
+          description: Discard the buffered shares instead of submitting one.
+      additionalProperties: false
+      oneOf:
+        - required: [share]
+          properties:
+            share:
+              minLength: 1
+            reset:
+              const: false
+        - required: [reset]
+          properties:
+            share:
+              maxLength: 0
+            reset:
+              const: true
+
+    StatusResponse:
+      type: object
+      required: [initialized, sealed, progress]
+      properties:
+        initialized:
+          type: boolean
+        sealed:
+          type: boolean
+        shares:
+          type: integer
+          description: Absent before init.
+        threshold:
+          type: integer
+          description: Absent before init.
+        progress:
+          type: integer
+          minimum: 0
+          description: Shares buffered toward the threshold.
+      additionalProperties: false
+
+    SecretRequest:
+      type: object
+      properties:
+        value:
+          type: string
+          contentEncoding: base64
+          description: At most 65536 bytes once decoded. Absent stores an empty secret.
+        ttl:
+          type: integer
+          minimum: 0
+          maximum: 9223372036
+          description: >
+            Seconds until the secret expires and reads as missing. Zero or
+            absent means it never expires; writing again without one clears it.
+      additionalProperties: false
+
+    GenerateRequest:
+      type: object
+      required: [length]
+      properties:
+        length:
+          type: integer
+          minimum: 16
+          maximum: 65536
+          description: How many random bytes to generate.
+        ttl:
+          type: integer
+          minimum: 0
+          maximum: 9223372036
+          description: >
+            Seconds between rotations: the secret is due for rotation this long
+            after each one, and keeps serving its value until rotated. Zero or
+            absent means it is never due.
+      additionalProperties: false
+
+    SecretResponse:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: string
+          contentEncoding: base64
+      additionalProperties: false
+
+    SecretReadResponse:
+      type: object
+      required: [value, generated]
+      properties:
+        value:
+          type: string
+          contentEncoding: base64
+          description: Empty for an empty secret, never null.
+        generated:
+          type: boolean
+          description: >
+            True for a secret made by `generate`, which rotates; false for one
+            written by `PUT`.
+        ttl:
+          type: integer
+          minimum: 1
+          maximum: 9223372036
+          description: >
+            Seconds the secret was written with: between rotations for a
+            generated one, its lifetime for a stored one. Absent when it has
+            none.
+        expires_at:
+          type: string
+          format: date-time
+          description: >
+            In UTC. For a secret written by `PUT`, when it stops reading; for a
+            generated one, when it is next due for rotation. Absent when it has
+            no TTL.
+      additionalProperties: false
+
+    ListResponse:
+      type: object
+      required: [paths]
+      properties:
+        paths:
+          type: array
+          description: Full paths, sorted by byte order. Empty when nothing matches, never null.
+          items:
+            type: string
+      additionalProperties: false
+
+    NamesResponse:
+      type: object
+      required: [names]
+      properties:
+        names:
+          type: array
+          description: Sorted by byte order. Empty when there are none, never null.
+          items:
+            type: string
+      additionalProperties: false
+
+    Summary:
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        alias:
+          type: string
+          description: Absent when there is none.
+      additionalProperties: false
+
+    EntityListResponse:
+      type: object
+      required: [entities]
+      properties:
+        entities:
+          type: array
+          description: Sorted by ID in byte order. Empty when there are none, never null.
+          items:
+            $ref: "#/components/schemas/Summary"
+      additionalProperties: false
+
+    GroupListResponse:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          description: Sorted by ID in byte order. Empty when there are none, never null.
+          items:
+            $ref: "#/components/schemas/Summary"
+      additionalProperties: false
+
+    UserListResponse:
+      type: object
+      required: [users]
+      properties:
+        users:
+          type: array
+          description: Sorted by name in byte order. Empty when there are none, never null.
+          items:
+            $ref: "#/components/schemas/UserSummary"
+      additionalProperties: false
+
+    UserSummary:
+      type: object
+      required: [name, entity_id]
+      properties:
+        name:
+          type: string
+        entity_id:
+          $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    UserResponse:
+      type: object
+      required: [entity_id]
+      properties:
+        entity_id:
+          $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    PolicyRequest:
+      type: object
+      properties:
+        rules:
+          type: array
+          description: Absent stores a policy with no rules, which grants nothing.
+          items:
+            $ref: "#/components/schemas/Rule"
+      additionalProperties: false
+
+    PolicyResponse:
+      type: object
+      required: [rules]
+      properties:
+        rules:
+          type: array
+          description: Empty for a policy with no rules, never null.
+          items:
+            $ref: "#/components/schemas/Rule"
+      additionalProperties: false
+
+    Rule:
+      type: object
+      description: >
+        Grants its capabilities on every resource its path matches. Every matching
+        rule in every policy applies, and a matching `deny` refuses whatever else
+        is granted.
+      required: [path, capabilities]
+      properties:
+        path:
+          type: string
+          maxLength: 257
+          description: >
+            A resource path, matched exactly, or a prefix ending in `*` that
+            matches everything starting with it (`*` alone matches everything).
+            `*` anywhere else is invalid.
+          example: secrets/dev/*
+        capabilities:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [create, read, update, delete, list, rotate, manage, deny]
+      additionalProperties: false
+
+    ID:
+      type: string
+      description: 16 random bytes in lowercase hex.
+      pattern: "^[0-9a-f]{32}$"
+      example: 0123456789abcdef0123456789abcdef
+
+    EntityRequest:
+      type: object
+      properties:
+        alias:
+          type: string
+          description: >
+            An optional name for the entity, unique across entities. Absent or
+            empty holds none; an update without it clears it.
+          pattern: "^(?!\\.\\.?$)[a-z0-9._-]*$"
+          maxLength: 128
+        policies:
+          type: array
+          description: Policy names. Absent holds none. A name need not exist yet; one that does not grants nothing.
+          items:
+            type: string
+            pattern: "^(?!\\.\\.?$)[A-Za-z0-9._-]+$"
+            maxLength: 128
+        groups:
+          type: array
+          description: Group IDs. Absent holds none. An ID need not exist; one that does not grants nothing.
+          items:
+            $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    EntityResponse:
+      type: object
+      required: [policies, groups]
+      properties:
+        alias:
+          type: string
+          description: Absent when the entity has none.
+        policies:
+          type: array
+          description: Empty when the entity holds none, never null.
+          items:
+            type: string
+        groups:
+          type: array
+          description: Empty when the entity holds none, never null.
+          items:
+            $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    CreateEntityResponse:
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    CreateTokenRequest:
+      type: object
+      properties:
+        ttl:
+          type: integer
+          minimum: 0
+          maximum: 9223372036
+          description: >
+            Seconds until the token expires. Zero or absent means the configured
+            default; more than the configured maximum (a day by default) is
+            refused, not shortened.
+      additionalProperties: false
+
+    CreateTokenResponse:
+      type: object
+      required: [token, expires_at]
+      properties:
+        token:
+          type: string
+          contentEncoding: base64
+          description: 32 bytes. Returned only here; it cannot be recovered later.
+        expires_at:
+          type: string
+          format: date-time
+          description: In UTC. The token is refused from this instant on.
+      additionalProperties: false
+
+    TokenSelfResponse:
+      type: object
+      description: Either `root` alone, or the entity and expiry.
+      properties:
+        root:
+          type: boolean
+        entity_id:
+          $ref: "#/components/schemas/ID"
+        alias:
+          type: string
+          description: Absent when the entity has none.
+        expires_at:
+          type: string
+          format: date-time
+          description: In UTC. The token is refused from this instant on.
+      additionalProperties: false
+      oneOf:
+        - required: [root]
+          properties:
+            root:
+              const: true
+          maxProperties: 1
+        - required: [entity_id, expires_at]
+          not:
+            required: [root]
+
+    GroupRequest:
+      type: object
+      properties:
+        alias:
+          type: string
+          description: >
+            An optional name for the group, unique across groups. Absent or
+            empty holds none; an update without it clears it.
+          pattern: "^(?!\\.\\.?$)[a-z0-9._-]*$"
+          maxLength: 128
+        policies:
+          type: array
+          description: Policy names. Absent holds none. A name need not exist yet; one that does not grants nothing.
+          items:
+            type: string
+            pattern: "^(?!\\.\\.?$)[A-Za-z0-9._-]+$"
+            maxLength: 128
+      additionalProperties: false
+
+    GroupResponse:
+      type: object
+      required: [policies]
+      properties:
+        alias:
+          type: string
+          description: Absent when the group has none.
+        policies:
+          type: array
+          description: Empty when the group holds none, never null.
+          items:
+            type: string
+      additionalProperties: false
+
+    CreateGroupResponse:
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+      additionalProperties: false
+
+    UserRequest:
+      type: object
+      required: [entity_id, password]
+      properties:
+        entity_id:
+          $ref: "#/components/schemas/ID"
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          description: >
+            As typed, not base64. 1 to 1024 bytes once UTF-8 encoded; the
+            length bounds count bytes, not characters.
+      additionalProperties: false
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: alice
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          description: As typed, not base64.
+      additionalProperties: false
+
+    ErrorResponse:
+      type: object
+      description: >
+        The body of every error response listed here. Messages are safe to show an
+        operator: they never carry a secret value, share material, key material,
+        or an internal error string.
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          minItems: 1
+          items:
+            type: string
+      additionalProperties: false

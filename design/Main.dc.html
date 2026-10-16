@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unseal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F2F5F9}
+a{color:#0E6582}a:hover{color:#0B4F63}
+button,input,select{font-family:inherit}
+button:disabled{cursor:not-allowed;opacity:0.55}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F2F5F9; color: #0F1B2D; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="background: #0F2A47; color: #FFFFFF">
+<div style="max-width: 1280px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 18px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+seal-gate
+</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="Init.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Initialize</a>
+<a href="Main.dc.html" aria-current="page" style="padding: 10px 14px; color: #FFFFFF; text-decoration: none; border-radius: 6px; background: #1C3D63; font-weight: 500">Unseal</a>
+<a href="Secrets.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Secrets</a>
+<a href="Identity.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Identity</a>
+<a href="Policies.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Policies</a>
+</nav>
+<button type="button" aria-pressed="{{ traceOn }}" onClick="{{ toggleTrace }}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; color: #FFFFFF; font-size: 14px; cursor: pointer; {{ traceBtnStyle }}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5"></path><path d="M16 7l5 5-5 5"></path></svg>
+API trace
+</button>
+<div style="display: flex; align-items: center; gap: 8px"><label for="acting" style="font-size: 14px; color: #C9D6E8">Acting as</label><select id="acting" style="min-height: 44px; padding: 0 10px; border: 1px solid #3A5A80; border-radius: 8px; background: #1C3D63; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 14px"><option>root</option><option>alice</option></select></div>
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ true }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #E1E8F2; color: #1E3A5F; font-weight: 600; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+Sealed
+</div>
+</sc-if>
+<sc-if value="{{ unsealed }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-weight: 600; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>
+Unsealed
+</div>
+</sc-if>
+</div>
+</header>
+
+<div style="max-width: 1280px; margin: 0 auto; padding: 32px 24px 48px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 24px; max-width: 880px; margin: 0 auto">
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 32px; line-height: 1.2; font-weight: 600">Unseal</h1>
+<p style="margin: 0; color: #4A5568; max-width: 680px">The master key was split into {{ n }} shares. Any {{ k }} key holders, each entering their own share from their own machine, rebuild it.</p>
+</div>
+
+<section aria-labelledby="state-h" style="background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px">
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ true }}">
+<div style="width: 72px; height: 72px; border-radius: 50%; background: #E1E8F2; color: #1E3A5F; display: flex; align-items: center; justify-content: center; flex: none">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path><path d="M12 15v2"></path></svg>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 2px">
+<h2 id="state-h" style="margin: 0; font-size: 22px; font-weight: 600">Sealed</h2>
+<p style="margin: 0; color: #4A5568">The key is not in memory. Secrets, policies and tokens are refused until the threshold is met.</p>
+</div>
+</sc-if>
+<sc-if value="{{ unsealed }}" hint-placeholder-val="{{ false }}">
+<div style="width: 72px; height: 72px; border-radius: 50%; background: #D7F5EC; color: #0B5D4B; display: flex; align-items: center; justify-content: center; flex: none">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path><path d="M12 15v2"></path></svg>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 2px">
+<h2 id="state-h" style="margin: 0; font-size: 22px; font-weight: 600">Unsealed</h2>
+<p style="margin: 0; color: #4A5568">The key is rebuilt and in memory. Sealing discards it; the shares are needed again.</p>
+</div>
+<button type="button" onClick="{{ seal }}" style="min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">Seal now</button>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+<span style="font-weight: 600">{{ progressText }}</span>
+<span style="font-size: 13px; color: #4A5568">Held by the server, so every browser sees the same count · updated 2 s ago</span>
+</div>
+<div role="img" aria-label="{{ progressText }}" style="display: flex; gap: 8px">
+<sc-for list="{{ segments }}" as="seg" hint-placeholder-count="3">
+<div style="flex: 1 1 0; height: 14px; border-radius: 4px; {{ seg.style }}"></div>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+<p role="alert" style="margin: 0; padding: 12px 14px; border-radius: 8px; background: #FCEDEB; color: #9B2C22; font-size: 15px">The shares did not combine into the key, so the server discarded them. Start again with correct shares.</p>
+</sc-if>
+
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ true }}">
+<form onSubmit="{{ submit }}" style="display: flex; flex-direction: column; gap: 8px; padding-top: 20px; border-top: 1px solid #E6ECF3">
+<label for="share" style="font-weight: 500">Your unseal share</label>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<input id="share" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your share" value="{{ share }}" onChange="{{ onShare }}" style="flex: 1 1 320px; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 16px; font-family: 'IBM Plex Mono', monospace">
+<button type="submit" disabled="{{ empty }}" style="min-height: 48px; padding: 0 22px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 16px; font-weight: 500; cursor: pointer">Submit share</button>
+</div>
+<span style="font-size: 13px; color: #4A5568">Sent once and not kept by this page. The field clears after sending.</span>
+</form>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+<span style="font-size: 14px; color: #4A5568">Started with the wrong shares? Discard the buffered ones for everyone.</span>
+<button type="button" onClick="{{ reset }}" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #B6C2D2; background: #FFFFFF; color: #0F1B2D; font-size: 15px; cursor: pointer">Discard buffered shares</button>
+</div>
+</sc-if>
+
+</section>
+
+</main>
+
+<sc-if value="{{ traceOn }}" hint-placeholder-val="{{ false }}">
+<aside aria-labelledby="trace-h" style="flex: 1 1 340px; min-width: 0; background: #0B1A2E; color: #E2E8F0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 id="trace-h" style="margin: 0; font-size: 16px; font-weight: 600; color: #FFFFFF">API trace</h2>
+<span style="font-size: 13px; color: #9FB0C6">newest first · secrets masked</span>
+</div>
+<sc-for list="{{ log }}" as="e" hint-placeholder-count="2">
+<div style="border-top: 1px solid #1F3350; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.45">
+<div style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap">
+<span style="font-weight: 500; color: #FFFFFF">{{ e.method }}</span>
+<span style="color: #C3D0E0; overflow-wrap: anywhere">{{ e.path }}</span>
+<span style="margin-left: auto; padding: 0 6px; border-radius: 4px; {{ e.codeStyle }}">{{ e.code }}</span>
+</div>
+<sc-if value="{{ e.hasReq }}" hint-placeholder-val="{{ true }}">
+<div style="color: #9FB0C6; white-space: pre-wrap; overflow-wrap: anywhere">→ {{ e.req }}</div>
+</sc-if>
+<div style="color: #E2E8F0; white-space: pre-wrap; overflow-wrap: anywhere">← {{ e.res }}</div>
+</div>
+</sc-for>
+</aside>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"shares":{"editor":"int","default":5,"min":2,"max":8},"threshold":{"editor":"int","default":3,"min":2,"max":8},"failCombine":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = Math.max(2, Math.min(8, this.props.shares ?? 5));
+    const k = Math.max(2, Math.min(n, this.props.threshold ?? 3));
+    const fail = this.props.failCombine ?? false;
+    const st = this.state || {};
+    const sealed = st.sealed !== false;
+    const progress = st.progress || 0;
+    const share = st.share || '';
+    const traceOn = st.traceOn === true;
+    const status = (s, p) => JSON.stringify({ initialized: true, sealed: s, shares: n, threshold: k, progress: p });
+    const ok = 'background: #0E4A5C; color: #C7F0FA';
+    const bad = 'background: #5C2A0C; color: #FFD9B8';
+    const log = st.log || [{ method: 'GET', path: '/v1/sys/status', code: '200', codeStyle: ok, hasReq: false, req: '', res: status(true, 0) }];
+    const push = (entry, next) => this.setState({ ...next, log: [entry, ...log].slice(0, 8) });
+
+    const submit = (ev) => {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      if (!sealed || share.trim() === '') return;
+      const next = progress + 1;
+      const reached = next >= k;
+      const failed = reached && fail;
+      const res = failed ? '{"errors":["invalid unseal share"]}' : reached ? status(false, 0) : status(true, next);
+      push({ method: 'POST', path: '/v1/sys/unseal', code: failed ? '400' : '200', codeStyle: failed ? bad : ok, hasReq: true, req: '{"share":"••••"}', res },
+        { share: '', progress: reached ? 0 : next, sealed: !reached || failed, failed });
+    };
+    const reset = () => push({ method: 'POST', path: '/v1/sys/unseal', code: '200', codeStyle: ok, hasReq: true, req: '{"reset":true}', res: status(true, 0) },
+      { progress: 0, failed: false });
+    const seal = () => push({ method: 'POST', path: '/v1/sys/seal', code: '204', codeStyle: ok, hasReq: true, req: 'Authorization: Bearer ••••', res: '(no body)' },
+      { progress: 0, sealed: true, failed: false });
+
+    const shown = sealed ? progress : k;
+    const segments = Array.from({ length: k }, (_, i) => ({
+      style: i < shown ? (sealed ? 'background: #0E7490' : 'background: #0B5D4B') : 'background: #E2E8F0'
+    }));
+
+    return {
+      n, k, sealed, unsealed: !sealed, failed: st.failed === true, share, empty: share.trim() === '',
+      segments, log, submit, reset, seal, traceOn,
+      onShare: (ev) => this.setState({ share: ev.target.value }),
+      toggleTrace: () => this.setState({ traceOn: !traceOn }),
+      traceBtnStyle: traceOn ? 'background: #0E7490; border: 1px solid #0E7490' : 'background: transparent; border: 1px solid #3A5A80',
+      progressText: sealed ? progress + ' of ' + k + ' shares submitted' : 'Threshold met: key rebuilt'
+    };
+  }
+}
+</script>
+</body>
+</html>

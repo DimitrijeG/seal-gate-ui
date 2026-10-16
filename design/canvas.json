@@ -1,0 +1,25 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-16T10:00:00Z"},
+  "title": "Seal Gate Console",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Init.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1100, "title": "1 · Initialize", "expand": "fill"},
+    "Main.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1100, "title": "2 · Unseal", "expand": "fill", "is_interactive": true},
+    "Secrets.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1000, "title": "3 · Secrets", "expand": "fill"},
+    "Identity.dc.html": {"x": 4560, "y": 0, "w": 1440, "h": 1300, "title": "4 · Identity · Entities", "expand": "fill"},
+    "Policies.dc.html": {"x": 6080, "y": 0, "w": 1440, "h": 1300, "title": "5 · Policies", "expand": "fill", "is_interactive": true},
+    "Login.dc.html": {"x": 0, "y": 1700, "w": 1440, "h": 900, "title": "Sign in", "expand": "fill", "is_interactive": true},
+    "IdentityGroups.dc.html": {"x": 1520, "y": 1700, "w": 1440, "h": 1000, "title": "4 · Identity · Groups", "expand": "fill"},
+    "IdentityUsernames.dc.html": {"x": 3040, "y": 1700, "w": 1440, "h": 900, "title": "4 · Identity · Usernames", "expand": "fill"},
+    "Errors.dc.html": {"x": 4560, "y": 1700, "w": 1440, "h": 2300, "title": "Error states", "expand": "fill"},
+    "Palettes.dc.html": {"x": 6080, "y": 1700, "w": 1440, "h": 1320, "title": "Palette options"}
+  },
+  "order": ["Init.dc.html", "Main.dc.html", "Secrets.dc.html", "Identity.dc.html", "Policies.dc.html", "Login.dc.html", "IdentityGroups.dc.html", "IdentityUsernames.dc.html", "Errors.dc.html", "Palettes.dc.html"],
+  "notes": {
+    "flow": {"x": 0, "y": -300, "text": "Seal Gate Console — demo flow", "kind": "title1", "maxW": 7520},
+    "more": {"x": 0, "y": 1400, "text": "Sign in and the other Identity tabs", "kind": "title1", "maxW": 4440}
+  },
+  "designSystems": []
+}

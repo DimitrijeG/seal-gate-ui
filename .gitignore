@@ -1,0 +1,13 @@
+# Local-only: assistant instructions and settings
+CLAUDE.md
+.claude/
+
+# Node and Vite
+node_modules/
+dist/
+*.local
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

@@ -1,0 +1,47 @@
+/* Base styles from design/: navy header, cyan accents, IBM Plex. */
+:root {
+  --navy-900: #0f2a47;
+  --navy-700: #1c3d63;
+  --navy-500: #3a5a80;
+  --ink: #0f1b2d;
+  --ink-muted: #4a5568;
+  --header-muted: #c9d6e8;
+  --surface: #f2f5f9;
+  --card: #ffffff;
+  --border: #e6ecf3;
+  --cyan-700: #0e6582;
+  --cyan-800: #0b4f63;
+  --danger: #a1342a;
+
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--cyan-700);
+}
+
+a:hover {
+  color: var(--cyan-800);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

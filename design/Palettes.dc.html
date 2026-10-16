@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Palette options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1320px; box-sizing: border-box; padding: 48px; background: #FFFFFF; color: #15171C; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 600">Palette options</h1>
+<p style="margin: 0; color: #4A505B; font-size: 16px; max-width: 900px">Same layout, five colour sets. Sealed is the vault's normal resting state, so D and E draw it calm rather than as a warning. Pick one and every screen switches to it.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px">
+<sc-for list="{{ options }}" as="p" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 600">{{ p.name }}</h2>
+<div style="border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; {{ p.frame }}">
+<div style="padding: 12px 16px; display: flex; align-items: center; gap: 10px; {{ p.bar }}">
+<span style="font-weight: 600; {{ p.brand }}">seal-gate</span>
+<span style="margin-left: auto; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; {{ p.sealed }}">Sealed</span>
+<span style="padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; {{ p.unsealed }}">Unsealed</span>
+</div>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; {{ p.card }}">
+<span style="font-size: 14px; font-weight: 600">2 of 3 shares submitted</span>
+<div style="display: flex; gap: 6px"><div style="flex: 1; height: 10px; border-radius: 3px; {{ p.fill }}"></div><div style="flex: 1; height: 10px; border-radius: 3px; {{ p.fill }}"></div><div style="flex: 1; height: 10px; border-radius: 3px; {{ p.empty }}"></div></div>
+<button type="button" style="min-height: 44px; border-radius: 8px; border: 0; font-size: 15px; font-weight: 500; {{ p.button }}">Submit share</button>
+</div>
+<div style="border-radius: 10px; padding: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; {{ p.trace }}">POST /v1/sys/unseal <span style="padding: 0 5px; border-radius: 3px; {{ p.code }}">200</span></div>
+</div>
+</div>
+<p style="margin: 0; font-size: 14px; color: #4A505B">{{ p.note }}</p>
+</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      options: [
+        {
+          name: 'A · Graphite (current)',
+          frame: 'background: #F3F4F6; border: 1px solid #DADDE3', bar: 'background: #FFFFFF; border-bottom: 1px solid #DADDE3', brand: 'color: #15171C',
+          sealed: 'background: #FCEFD9; color: #8A4204', unsealed: 'background: #DDF2EE; color: #0A5C51',
+          card: 'background: #FFFFFF; border: 1px solid #DADDE3; color: #15171C', fill: 'background: #B45309', empty: 'background: #E3E6EB',
+          button: 'background: #15171C; color: #FFFFFF', trace: 'background: #15171C; color: #E6E8EC', code: 'background: #1E4D45; color: #BFF0E4',
+          note: 'Neutral and quiet. Black with amber is the closest of these to Vault’s black and yellow.'
+        },
+        {
+          name: 'B · Indigo',
+          frame: 'background: #F4F5FA; border: 1px solid #D9DAE8', bar: 'background: #FFFFFF; border-bottom: 1px solid #D9DAE8', brand: 'color: #3730A3',
+          sealed: 'background: #FDE8DC; color: #9A3412', unsealed: 'background: #DCFCE7; color: #166534',
+          card: 'background: #FFFFFF; border: 1px solid #D9DAE8; color: #15171C', fill: 'background: #4F46E5', empty: 'background: #E2E3EE',
+          button: 'background: #3730A3; color: #FFFFFF', trace: 'background: #1B1B3A; color: #E4E4F5', code: 'background: #1F4D33; color: #C4F2D4',
+          note: 'Academic and calm, clearly its own. Indigo actions stay apart from the status colours.'
+        },
+        {
+          name: 'C · Forest',
+          frame: 'background: #F1F5F2; border: 1px solid #D3DDD6', bar: 'background: #FFFFFF; border-bottom: 1px solid #D3DDD6', brand: 'color: #14532D',
+          sealed: 'background: #FBE5DA; color: #7C2D12', unsealed: 'background: #D9F0E0; color: #14532D',
+          card: 'background: #FFFFFF; border: 1px solid #D3DDD6; color: #15171C', fill: 'background: #C2410C', empty: 'background: #E1E7E3',
+          button: 'background: #14532D; color: #FFFFFF', trace: 'background: #0F1E16; color: #E2EDE6', code: 'background: #1E4D33; color: #C4F2D4',
+          note: 'The brand colour is the unsealed colour, so “open” reads as the app’s own state. Rust for sealed.'
+        },
+        {
+          name: 'D · Navy and cyan',
+          frame: 'background: #F2F5F9; border: 1px solid #D5DDE8', bar: 'background: #0F2A47; border-bottom: 1px solid #0F2A47', brand: 'color: #FFFFFF',
+          sealed: 'background: #E1E8F2; color: #1E3A5F', unsealed: 'background: #D7F5EC; color: #0B5D4B',
+          card: 'background: #FFFFFF; border: 1px solid #D5DDE8; color: #0F1B2D', fill: 'background: #0E7490', empty: 'background: #E2E8F0',
+          button: 'background: #0F2A47; color: #FFFFFF', trace: 'background: #0B1A2E; color: #E2E8F0', code: 'background: #0E4A5C; color: #C7F0FA',
+          note: 'The classic trust colours of security brands. Sealed is a calm slate-blue, not an alarm; cyan marks progress.'
+        },
+        {
+          name: 'E · Midnight (dark)',
+          frame: 'background: #120F1C; border: 1px solid #2E2942', bar: 'background: #17131F; border-bottom: 1px solid #2E2942', brand: 'color: #C9BEFF',
+          sealed: 'background: #2A2440; color: #D9D2FF', unsealed: 'background: #12331F; color: #7BE8A8',
+          card: 'background: #1C1829; border: 1px solid #2E2942; color: #ECE9F5', fill: 'background: #B4A5FF', empty: 'background: #2E2942',
+          button: 'background: #B4A5FF; color: #120F1C', trace: 'background: #0B0913; color: #DCD7EA', code: 'background: #12331F; color: #7BE8A8',
+          note: 'Developer-tool dark, violet brand and one green for “go”. Looks sharp on a laptop; projectors wash dark themes out.'
+        }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

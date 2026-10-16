@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Policies</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F2F5F9}
+a{color:#0E6582}a:hover{color:#0B4F63}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F2F5F9; color: #0F1B2D; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="background: #0F2A47; color: #FFFFFF">
+<div style="max-width: 1280px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 18px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+seal-gate
+</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="Init.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Initialize</a>
+<a href="Main.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Unseal</a>
+<a href="Secrets.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Secrets</a>
+<a href="Identity.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Identity</a>
+<a href="Policies.dc.html" aria-current="page" style="padding: 10px 14px; color: #FFFFFF; text-decoration: none; border-radius: 6px; background: #1C3D63; font-weight: 500">Policies</a>
+</nav>
+<button type="button" aria-pressed="false" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A5A80; background: transparent; color: #FFFFFF; font-size: 14px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5"></path><path d="M16 7l5 5-5 5"></path></svg>API trace</button>
+<div style="display: flex; align-items: center; gap: 8px"><label for="acting" style="font-size: 14px; color: #C9D6E8">Acting as</label><select id="acting" style="min-height: 44px; padding: 0 10px; border: 1px solid #3A5A80; border-radius: 8px; background: #1C3D63; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 14px"><option>root</option><option>alice</option><option>Sign in as…</option></select></div>
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-weight: 600; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>
+Unsealed
+</div>
+</div>
+</header>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 32px 24px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 32px; line-height: 1.2; font-weight: 600">Policies</h1>
+<p style="margin: 0; color: #4A5568; max-width: 760px">A rule grants capabilities on a path, matched exactly or as a prefix ending in <code style="font-family: 'IBM Plex Mono', monospace">*</code>. Every matching rule applies, and a matching deny refuses whatever else is granted.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<section aria-label="Policies" style="flex: 1 1 280px; min-width: 0; background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; display: flex; flex-direction: column">
+<div style="padding: 16px; display: flex; gap: 8px; border-bottom: 1px solid #E6ECF3">
+<div style="flex: 1 1 auto; position: relative; display: flex; align-items: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
+<label for="find" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find policy</label>
+<input id="find" type="search" placeholder="Find among 42" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 0 12px 0 38px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 15px">
+</div>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">New</button>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; max-height: 520px; overflow-y: auto">
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">audit-read</span><span style="font-size: 13px; color: #4A5568">2 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">billing-rotate</span><span style="font-size: 13px; color: #4A5568">1 rule</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">ci-deploy</span><span style="font-size: 13px; color: #4A5568">4 rules</span></a></li>
+<li><a href="#" aria-current="true" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7; background: #E0F2F7; box-shadow: inset 3px 0 0 #0E7490"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500">dev-read</span><span style="font-size: 13px; color: #3B4A5E">6 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">dev-write</span><span style="font-size: 13px; color: #4A5568">3 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">identity-admin</span><span style="font-size: 13px; color: #4A5568">5 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">ops-admin</span><span style="font-size: 13px; color: #4A5568">9 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-family: 'IBM Plex Mono', monospace">payments-read</span><span style="font-size: 13px; color: #4A5568">2 rules</span></a></li>
+<li><a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; color: #0F1B2D; text-decoration: none"><span style="font-family: 'IBM Plex Mono', monospace">reporting-read</span><span style="font-size: 13px; color: #4A5568">3 rules</span></a></li>
+</ul>
+</section>
+
+<section aria-labelledby="ed-h" style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; display: flex; flex-direction: column">
+
+<div style="padding: 20px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #E6ECF3">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 id="ed-h" style="margin: 0; font-size: 22px; font-weight: 600; font-family: 'IBM Plex Mono', monospace">dev-read</h2>
+<span style="font-size: 14px; color: #4A5568">6 rules</span>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<div style="position: relative; display: flex; align-items: center">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
+<label for="rule-filter" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Filter rules</label>
+<input id="rule-filter" type="search" placeholder="Filter rules by path" style="width: 220px; min-height: 44px; padding: 0 12px 0 36px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 14px; font-family: 'IBM Plex Mono', monospace">
+</div>
+<div role="group" aria-label="View" style="display: flex; padding: 3px; border-radius: 10px; background: #E6ECF3">
+<button type="button" aria-pressed="true" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: #FFFFFF; color: #0F1B2D; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px rgba(15,27,45,0.15); cursor: pointer">Rules</button>
+<button type="button" aria-pressed="false" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: #3B4A5E; font-size: 14px; cursor: pointer">JSON</button>
+</div>
+</div>
+</div>
+
+<div style="overflow-x: auto">
+<div role="table" aria-label="Rules of dev-read" style="min-width: 780px; display: flex; flex-direction: column">
+<div role="row" style="display: grid; grid-template-columns: minmax(220px, 1fr) repeat(8, 56px) 52px; align-items: end; padding: 12px 16px 8px 24px; border-bottom: 1px solid #E6ECF3; font-size: 12px; color: #4A5568; text-align: center">
+<span role="columnheader" style="text-align: left; font-size: 13px">Path</span>
+<span role="columnheader">create</span><span role="columnheader">read</span><span role="columnheader">update</span><span role="columnheader">delete</span><span role="columnheader">list</span><span role="columnheader">rotate</span><span role="columnheader">manage</span><span role="columnheader" style="color: #9B2C22; font-weight: 600">deny</span>
+<span role="columnheader"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Remove</span></span>
+</div>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+<div role="row" style="display: grid; grid-template-columns: minmax(220px, 1fr) repeat(8, 56px) 52px; align-items: center; padding: 6px 16px 6px 24px; border-bottom: 1px solid #EEF2F7; {{ r.rowStyle }}">
+<span role="cell" style="padding-right: 12px"><input type="text" value="{{ r.path }}" aria-label="{{ r.pathLabel }}" style="width: 100%; box-sizing: border-box; min-height: 40px; padding: 0 10px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; {{ r.inputStyle }}"></span>
+<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="8">
+<span role="cell" style="display: flex; justify-content: center">
+<button type="button" aria-pressed="{{ c.pressed }}" aria-label="{{ c.label }}" onClick="{{ c.toggle }}" style="width: 36px; height: 36px; border-radius: 9px; border-width: 1.5px; border-style: solid; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 120ms; {{ c.style }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button>
+</span>
+</sc-for>
+<span role="cell" style="display: flex; justify-content: flex-end"><button type="button" aria-label="{{ r.removeLabel }}" style="width: 40px; height: 40px; border-radius: 8px; border: 0; background: transparent; color: #4A5568; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l1 12h8l1-12"></path></svg></button></span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="padding: 12px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px dashed #0E7490; background: #FFFFFF; color: #0E6582; font-size: 14px; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Add rule</button>
+<span style="font-size: 13px; color: #4A5568">Click a square to grant or remove. Tinted rows deny, and deny wins.</span>
+</div>
+
+<sc-if value="{{ dirty }}" hint-placeholder-val="{{ true }}">
+<div style="padding: 14px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; background: #E0F2F7; border-top: 1px solid #B9E1EC; border-radius: 0 0 12px 12px">
+<span style="font-size: 14px; color: #0B4F63; font-weight: 500">{{ changesText }}</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" onClick="{{ discard }}" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #B6C2D2; background: #FFFFFF; font-size: 15px; cursor: pointer">Discard</button>
+<button type="button" onClick="{{ save }}" style="min-height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">Save policy</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ clean }}" hint-placeholder-val="{{ false }}">
+<div style="padding: 14px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid #E6ECF3">
+<span style="font-size: 14px; color: #4A5568">All changes saved</span>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #E2B4AE; background: #FFFFFF; color: #A1342A; font-size: 15px; cursor: pointer">Delete policy</button>
+</div>
+</sc-if>
+
+</section>
+</div>
+
+<section aria-labelledby="try-h" style="background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="try-h" style="margin: 0; font-size: 18px; font-weight: 600">Try it</h2>
+<p style="margin: 0; font-size: 14px; color: #4A5568">Sends a real request as the chosen entity; the server decides, the console only shows the answer.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+<div style="flex: 0 1 200px; display: flex; flex-direction: column; gap: 6px">
+<label for="t-as" style="font-size: 14px; font-weight: 500">As</label>
+<div style="position: relative; display: flex; align-items: center">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B4A5E" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px; pointer-events: none"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+<select id="t-as" style="appearance: none; -webkit-appearance: none; width: 100%; min-height: 44px; padding: 0 36px 0 36px; border: 1px solid #B6C2D2; border-radius: 10px; background: #FFFFFF; color: #0F1B2D; font-size: 15px; font-weight: 500; cursor: pointer"><option>alice</option><option>bob</option><option>root</option></select>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B4A5E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 12px; pointer-events: none"><path d="M7 10l5 5 5-5"></path></svg>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="t-op" style="font-size: 14px; font-weight: 500">Operation</span>
+<div role="group" aria-labelledby="t-op" style="display: flex; padding: 3px; border-radius: 10px; background: #E6ECF3">
+<button type="button" aria-pressed="true" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: #FFFFFF; color: #0F1B2D; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px rgba(15,27,45,0.15); cursor: pointer">read</button>
+<button type="button" aria-pressed="false" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: #3B4A5E; font-family: 'IBM Plex Mono', monospace; font-size: 14px; cursor: pointer">list</button>
+<button type="button" aria-pressed="false" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: #3B4A5E; font-family: 'IBM Plex Mono', monospace; font-size: 14px; cursor: pointer">delete</button>
+</div>
+</div>
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px"><label for="t-path" style="font-size: 14px; font-weight: 500">Secret path</label><input id="t-path" type="text" value="dev/admin-key" style="min-height: 44px; padding: 0 12px; border: 1px solid #B6C2D2; border-radius: 10px; font-size: 15px; font-family: 'IBM Plex Mono', monospace"></div>
+<button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">Send</button>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px">
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #F2F5F9; flex-wrap: wrap">
+<code style="flex: 1 1 200px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; overflow-wrap: anywhere">alice · read dev/admin-key</code>
+<span style="padding: 2px 10px; border-radius: 999px; background: #FCEDEB; color: #9B2C22; font-size: 13px; font-weight: 600">403 · rule 5 denies</span>
+</li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #F2F5F9; flex-wrap: wrap">
+<code style="flex: 1 1 200px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; overflow-wrap: anywhere">alice · read dev/feature-flags</code>
+<span style="padding: 2px 10px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-size: 13px; font-weight: 600">200 · rules 1, 3 grant</span>
+</li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #F2F5F9; flex-wrap: wrap">
+<code style="flex: 1 1 200px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; overflow-wrap: anywhere">alice · read db/postgres/billing-user</code>
+<span style="padding: 2px 10px; border-radius: 999px; background: #FCEDEB; color: #9B2C22; font-size: 13px; font-weight: 600">403 · rule 4 lists only</span>
+</li>
+</ul>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const caps = ['create', 'read', 'update', 'delete', 'list', 'rotate', 'manage', 'deny'];
+    const initial = [
+      { path: 'secrets/dev/*', caps: ['read', 'list'] },
+      { path: 'secrets/shared/config/*', caps: ['read', 'list'] },
+      { path: 'secrets/dev/feature-flags', caps: ['read', 'update'] },
+      { path: 'secrets/db/postgres/*', caps: ['list'] },
+      { path: 'secrets/dev/admin-key', caps: ['deny'] },
+      { path: 'secrets/dev/signing/*', caps: ['deny'] }
+    ];
+    const st = this.state || {};
+    const saved = st.saved || initial;
+    const rules = st.rules || [
+      saved[0], saved[1], saved[2], { path: saved[3].path, caps: ['list', 'read'] }, saved[4], { path: saved[5].path, caps: ['deny', 'rotate'] }
+    ];
+    const toggle = (i, c) => {
+      const next = rules.map((r, j) => j !== i ? r : { path: r.path, caps: r.caps.includes(c) ? r.caps.filter((x) => x !== c) : [...r.caps, c] });
+      this.setState({ rules: next });
+    };
+    let changes = 0;
+    rules.forEach((r, i) => caps.forEach((c) => { if (r.caps.includes(c) !== saved[i].caps.includes(c)) changes++; }));
+    const rows = rules.map((r, i) => {
+      const denies = r.caps.includes('deny');
+      return {
+        path: r.path,
+        pathLabel: 'Rule ' + (i + 1) + ' path',
+        removeLabel: 'Remove rule ' + (i + 1),
+        rowStyle: denies ? 'background: #FFFAF9' : '',
+        inputStyle: denies ? 'border: 1px solid #EBCFCA' : 'border: 1px solid #D5DDE8',
+        cells: caps.map((c) => {
+          const on = r.caps.includes(c);
+          const changed = on !== saved[i].caps.includes(c);
+          const ring = changed ? '; box-shadow: 0 0 0 3px #B9E1EC' : '';
+          const style = on
+            ? (c === 'deny' ? 'background: #FCE8E5; border-color: #D9897F; color: #9B2C22' : 'background: #0E7490; border-color: #0E7490; color: #FFFFFF')
+            : 'background: #FFFFFF; border-color: #C9D3E0; color: transparent';
+          return { label: 'Rule ' + (i + 1) + ': ' + c, pressed: on ? 'true' : 'false', style: style + ring, toggle: () => toggle(i, c) };
+        })
+      };
+    });
+    return {
+      rows,
+      dirty: changes > 0,
+      clean: changes === 0,
+      changesText: changes + (changes === 1 ? ' unsaved change' : ' unsaved changes') + ', ringed in the table',
+      discard: () => this.setState({ rules: saved }),
+      save: () => this.setState({ saved: rules, rules })
+    };
+  }
+}
+</script>
+</body>
+</html>

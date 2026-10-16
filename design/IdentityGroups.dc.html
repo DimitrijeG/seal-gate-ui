@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Identity · Groups</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F2F5F9}
+a{color:#0E6582}a:hover{color:#0B4F63}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F2F5F9; color: #0F1B2D; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="background: #0F2A47; color: #FFFFFF">
+<div style="max-width: 1280px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 18px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+seal-gate
+</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="Init.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Initialize</a>
+<a href="Main.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Unseal</a>
+<a href="Secrets.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Secrets</a>
+<a href="Identity.dc.html" aria-current="page" style="padding: 10px 14px; color: #FFFFFF; text-decoration: none; border-radius: 6px; background: #1C3D63; font-weight: 500">Identity</a>
+<a href="Policies.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Policies</a>
+</nav>
+<button type="button" aria-pressed="false" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A5A80; background: transparent; color: #FFFFFF; font-size: 14px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5"></path><path d="M16 7l5 5-5 5"></path></svg>API trace</button>
+<div style="display: flex; align-items: center; gap: 8px"><label for="acting" style="font-size: 14px; color: #C9D6E8">Acting as</label><select id="acting" style="min-height: 44px; padding: 0 10px; border: 1px solid #3A5A80; border-radius: 8px; background: #1C3D63; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 14px"><option>root</option><option>alice</option><option>Sign in as…</option></select></div>
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-weight: 600; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>
+Unsealed
+</div>
+</div>
+</header>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 32px 24px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 32px; line-height: 1.2; font-weight: 600">Identity</h1>
+<p style="margin: 0; color: #4A5568; max-width: 720px">A group is a named set of policies. Every entity in it gets those policies, so changing the group changes access for all of them at once.</p>
+</div>
+
+<nav aria-label="Identity sections" style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #D5DDE8">
+<a href="Identity.dc.html" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; color: #3B4A5E; text-decoration: none">Entities <span style="padding: 0 8px; border-radius: 999px; background: #E6ECF3; font-size: 13px">24</span></a>
+<a href="IdentityGroups.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; color: #0F1B2D; text-decoration: none; font-weight: 600; box-shadow: inset 0 -3px 0 #0E7490">Groups <span style="padding: 0 8px; border-radius: 999px; background: #E0F2F7; color: #0B4F63; font-size: 13px">6</span></a>
+<a href="IdentityUsernames.dc.html" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; color: #3B4A5E; text-decoration: none">Usernames <span style="padding: 0 8px; border-radius: 999px; background: #E6ECF3; font-size: 13px">18</span></a>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<section aria-label="Groups" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; display: flex; flex-direction: column">
+<div style="padding: 16px; display: flex; gap: 8px; border-bottom: 1px solid #E6ECF3">
+<div style="flex: 1 1 auto; position: relative; display: flex; align-items: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
+<label for="find" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find group</label>
+<input id="find" type="search" placeholder="Name or ID" style="width: 100%; box-sizing: border-box; min-height: 44px; padding: 0 12px 0 38px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 15px">
+</div>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">New</button>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none">
+<li><a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-weight: 600">auditors</span><span style="font-size: 13px; color: #4A5568">1 policy</span></a></li>
+<li><a href="#" aria-current="true" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7; background: #E0F2F7; box-shadow: inset 3px 0 0 #0E7490"><span style="font-weight: 600">developers</span><span style="font-size: 13px; color: #3B4A5E">2 policies</span></a></li>
+<li><a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-weight: 600">monitoring</span><span style="font-size: 13px; color: #4A5568">1 policy</span></a></li>
+<li><a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-weight: 600">on-call</span><span style="font-size: 13px; color: #4A5568">1 policy</span></a></li>
+<li><a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none; border-bottom: 1px solid #EEF2F7"><span style="font-weight: 600">payments</span><span style="font-size: 13px; color: #4A5568">2 policies</span></a></li>
+<li><a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; color: #0F1B2D; text-decoration: none"><span style="font-weight: 600">release</span><span style="font-size: 13px; color: #4A5568">1 policy</span></a></li>
+</ul>
+</section>
+
+<section aria-labelledby="grp-name" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h2 id="grp-name" style="margin: 0; font-size: 24px; font-weight: 600">developers</h2>
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap"><span style="font-size: 13px; color: #4A5568">ID</span><code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #3B4A5E; overflow-wrap: anywhere">8a1e4c2f90b37d65e1f0a9b8c7d6e5f4</code><button type="button" aria-label="Copy ID" style="width: 36px; height: 36px; border-radius: 6px; border: 1px solid #D5DDE8; background: #FFFFFF; color: #3B4A5E; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V4H4v12h4"></path></svg></button></div>
+</div>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid #B6C2D2; background: #FFFFFF; font-size: 14px; cursor: pointer">Rename</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Policies it brings</h3>
+<span style="font-size: 13px; color: #4A5568">Every entity in the group gets these.</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px 0 12px; border-radius: 999px; background: #E0F2F7; color: #0B4F63; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"></path></svg>
+<a href="Policies.dc.html" style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #0B4F63">dev-read</a>
+<button type="button" aria-label="Remove policy dev-read" style="width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: #0B4F63; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button>
+</span>
+<span style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px 0 12px; border-radius: 999px; background: #E0F2F7; color: #0B4F63; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"></path></svg>
+<a href="Policies.dc.html" style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #0B4F63">dev-write</a>
+<button type="button" aria-label="Remove policy dev-write" style="width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: #0B4F63; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button>
+</span>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px dashed #0E7490; background: #FFFFFF; color: #0E6582; font-size: 14px; font-weight: 500; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Add policy</button>
+</div>
+</div>
+
+<p style="margin: 0; padding: 12px 14px; border-radius: 10px; background: #F2F5F9; font-size: 14px; color: #3B4A5E">Entities join a group from their own page, under Groups. Membership is stored on the entity, not here.</p>
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #E6ECF3">
+<span style="font-size: 14px; color: #4A5568">Entities in this group lose the policies it brings.</span>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #E2B4AE; background: #FFFFFF; color: #A1342A; font-size: 15px; cursor: pointer">Delete group</button>
+</div>
+
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

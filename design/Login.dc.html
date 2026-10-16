@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F2F5F9}
+a{color:#0E6582}a:hover{color:#0B4F63}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F2F5F9; color: #0F1B2D; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5; display: flex; flex-direction: column">
+
+<header style="background: #0F2A47; color: #FFFFFF">
+<div style="max-width: 1280px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; min-height: 44px">
+<span style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+seal-gate
+</span>
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #E1E8F2; color: #1E3A5F; font-weight: 600; font-size: 14px">Sealed</div>
+</sc-if>
+<sc-if value="{{ unsealed }}" hint-placeholder-val="{{ true }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-weight: 600; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>
+Unsealed
+</div>
+</sc-if>
+</div>
+</header>
+
+<main style="flex: 1 1 auto; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 48px">
+<div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-direction: column; gap: 4px; text-align: center">
+<h1 style="margin: 0; font-size: 28px; font-weight: 600">Sign in</h1>
+<p style="margin: 0; color: #4A5568">Every request is made as the entity you sign in as.</p>
+</div>
+
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 12px 16px; border-radius: 10px; background: #E1E8F2; color: #1E3A5F; font-size: 14px">
+<span>The instance is sealed. Sign-in works once it is unsealed.</span>
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 8px; background: #0F2A47; color: #FFFFFF; text-decoration: none; font-weight: 500">Go to Unseal</a>
+</div>
+</sc-if>
+
+<section style="background: #FFFFFF; border: 1px solid #D5DDE8; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 8px 24px rgba(15,27,45,0.06)">
+
+<div role="tablist" aria-label="Sign-in method" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; border-radius: 12px; background: #E6ECF3">
+<button type="button" role="tab" aria-selected="{{ isPassword }}" onClick="{{ pickPassword }}" style="min-height: 44px; border-radius: 9px; border: 0; font-size: 15px; cursor: pointer; {{ passwordTab }}">Username</button>
+<button type="button" role="tab" aria-selected="{{ isToken }}" onClick="{{ pickToken }}" style="min-height: 44px; border-radius: 9px; border: 0; font-size: 15px; cursor: pointer; {{ tokenTab }}">Token</button>
+</div>
+
+<sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+<p role="alert" style="margin: 0; padding: 12px 14px; border-radius: 8px; background: #FCEDEB; color: #9B2C22; font-size: 14px">{{ errorText }}</p>
+</sc-if>
+
+<sc-if value="{{ isPassword }}" hint-placeholder-val="{{ true }}">
+<form style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="l-user" style="font-weight: 500">Username</label><input id="l-user" type="text" autocomplete="username" value="alice" style="min-height: 48px; padding: 0 14px; border: 1px solid #B6C2D2; border-radius: 10px; font-size: 16px"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="l-pw" style="font-weight: 500">Password</label><input id="l-pw" type="password" autocomplete="current-password" value="demo-password" style="min-height: 48px; padding: 0 14px; border: 1px solid #B6C2D2; border-radius: 10px; font-size: 16px"></div>
+<button type="button" style="min-height: 48px; border-radius: 10px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 16px; font-weight: 500; cursor: pointer">Sign in</button>
+</form>
+</sc-if>
+
+<sc-if value="{{ isToken }}" hint-placeholder-val="{{ false }}">
+<form style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="l-tok" style="font-weight: 500">Token</label>
+<input id="l-tok" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a token" style="min-height: 48px; padding: 0 14px; border: 1px solid #B6C2D2; border-radius: 10px; font-size: 16px; font-family: 'IBM Plex Mono', monospace">
+<span style="font-size: 13px; color: #4A5568">The root token from initialization, or one issued to an entity.</span>
+</div>
+<button type="button" style="min-height: 48px; border-radius: 10px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 16px; font-weight: 500; cursor: pointer">Sign in</button>
+</form>
+</sc-if>
+
+</section>
+
+<p style="margin: 0; text-align: center; font-size: 13px; color: #4A5568">The token stays in this tab only. Closing the tab signs you out.</p>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sealed":{"editor":"boolean","default":false},"showError":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const method = st.method || 'password';
+    const sealed = this.props.sealed ?? false;
+    const on = 'background: #FFFFFF; color: #0F1B2D; font-weight: 600; box-shadow: 0 1px 3px rgba(15,27,45,0.18)';
+    const off = 'background: transparent; color: #3B4A5E; font-weight: 400';
+    return {
+      sealed, unsealed: !sealed,
+      isPassword: method === 'password', isToken: method === 'token',
+      passwordTab: method === 'password' ? on : off,
+      tokenTab: method === 'token' ? on : off,
+      pickPassword: () => this.setState({ method: 'password' }),
+      pickToken: () => this.setState({ method: 'token' }),
+      showError: this.props.showError ?? false,
+      errorText: method === 'password' ? 'Invalid username or password.' : 'Missing or invalid token.'
+    };
+  }
+}
+</script>
+</body>
+</html>
