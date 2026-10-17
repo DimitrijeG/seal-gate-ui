@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router'
 import { type Status, api, applyStatus, refreshStatus, server } from '../../api/client'
-import { call } from '../../api/result'
+import { call, messageText } from '../../api/result'
 import { token } from '../../api/session'
 import { isBase64 } from '../../lib/base64'
 import { useStore } from '../../lib/store'
@@ -131,7 +131,7 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
       )}
       {errors.length > 0 && (
         <p className="alert" role="alert">
-          {errors.join(' ')}
+          {messageText(errors)}
         </p>
       )}
 
@@ -203,7 +203,7 @@ function SealButton() {
       </button>
       {errors.length > 0 && (
         <span className="field__hint field__hint--error" role="alert">
-          {errors.join(' ')}
+          {messageText(errors)}
         </span>
       )}
     </div>

@@ -27,6 +27,18 @@ export function errorMessages(status: number, body: unknown): string[] {
   return [`The server answered ${status} without an explanation.`]
 }
 
+// The server's messages as the console shows them: each a sentence, so
+// "invalid username or password" reads "Invalid username or password."
+export function messageText(messages: string[]): string {
+  return messages
+    .map((m) => {
+      const text = m.trim()
+      const capital = text.charAt(0).toUpperCase() + text.slice(1)
+      return /[.!?]$/.test(capital) ? capital : `${capital}.`
+    })
+    .join(' ')
+}
+
 export async function call<T>(
   request: Promise<{ data?: T; error?: unknown; response: Response }>,
 ): Promise<ApiResult<T>> {

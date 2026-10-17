@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { refreshStatus, server, startStatusPolling } from '../api/client'
-import { token } from '../api/session'
+import { loadIdentity } from '../api/identity'
+import { identity, token } from '../api/session'
 import { useStore } from '../lib/store'
 import { CodeIcon, LockIcon } from './icons'
 import { navItems } from './navigation'
+import { SessionMenu } from './SessionMenu'
 import { StatusPill } from './StatusPill'
 import { TracePanel } from './TracePanel'
 import './Shell.css'
@@ -30,7 +32,9 @@ function saveTraceOn(on: boolean): void {
 
 export function Shell() {
   const srv = useStore(server)
-  const signedIn = useStore(token) !== null
+  const currentToken = useStore(token)
+  const who = useStore(identity)
+  const signedIn = currentToken !== null
   const [traceOn, setTraceOn] = useState(loadTraceOn)
   // Sign-in stands alone in the design: brand and status only.
   const bare = useLocation().pathname === '/login'
@@ -38,6 +42,14 @@ export function Shell() {
   useEffect(() => startStatusPolling(), [])
 
   const status = srv.state === 'loading' ? null : srv.status
+  const unsealed = status !== null && status.initialized && !status.sealed
+
+  // Whom the token speaks for, read once it can be: a sealed instance
+  // answers nothing but status.
+  useEffect(() => {
+    if (currentToken !== null && who === null && unsealed) void loadIdentity()
+  }, [currentToken, who, unsealed])
+
   const toggleTrace = () => {
     setTraceOn(!traceOn)
     saveTraceOn(!traceOn)
@@ -69,6 +81,7 @@ export function Shell() {
                 <CodeIcon />
                 API trace
               </button>
+              <SessionMenu />
             </>
           )}
           <div className="app-header__end">

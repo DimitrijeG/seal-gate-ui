@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router'
 import { InitPage } from '../pages/init/InitPage'
+import { LoginPage } from '../pages/login/LoginPage'
 import { Placeholder } from '../pages/Placeholder'
 import { UnsealPage } from '../pages/unseal/UnsealPage'
 import { RequireSession, Start } from './guards'
@@ -12,7 +13,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Start /> },
       { path: 'init', element: <InitPage /> },
       { path: 'unseal', element: <UnsealPage /> },
-      { path: 'login', element: <Placeholder title="Sign in" /> },
+      { path: 'login', element: <LoginPage /> },
       {
         element: <RequireSession />,
         children: [

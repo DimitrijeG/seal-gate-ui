@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useBlocker, useNavigate } from 'react-router'
 import { api, refreshStatus, server } from '../../api/client'
-import { call } from '../../api/result'
+import { call, messageText } from '../../api/result'
 import type { components } from '../../api/schema'
 import { useStore } from '../../lib/store'
 import { SecretRow } from '../../ui/SecretRow'
@@ -164,7 +164,7 @@ function SplitForm({
 
       {errors.length > 0 && (
         <p className="alert" role="alert">
-          {errors.join(' ')}
+          {messageText(errors)}
         </p>
       )}
 

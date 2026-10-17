@@ -1,7 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { OPEN_OPERATIONS } from './client'
-import { call, errorMessages } from './result'
+import { call, errorMessages, messageText } from './result'
+
+describe('messageText', () => {
+  it('turns server messages into sentences', () => {
+    expect(messageText(['invalid username or password'])).toBe('Invalid username or password.')
+    expect(messageText(['missing or invalid token'])).toBe('Missing or invalid token.')
+  })
+
+  it('keeps punctuation that is there and joins several', () => {
+    expect(messageText(['The server answered 502 without an explanation.', 'permission denied'])).toBe(
+      'The server answered 502 without an explanation. Permission denied.',
+    )
+  })
+})
 
 describe('errorMessages', () => {
   it('returns the server messages', () => {

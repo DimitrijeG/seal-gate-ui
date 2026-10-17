@@ -80,6 +80,75 @@
   border-color: var(--cyan-600);
 }
 
+/* Session menu: where the design's "Acting as" select stood */
+
+.session {
+  position: relative;
+}
+
+.session__button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--navy-500);
+  border-radius: 8px;
+  background: var(--navy-700);
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.session__label {
+  color: var(--header-muted);
+}
+
+.session__name {
+  font-family: var(--font-mono);
+}
+
+.session__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(15, 27, 45, 0.1);
+}
+
+.session__detail {
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.session__item {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session__item:hover:not(:disabled) {
+  background: var(--surface);
+}
+
 .status-pill {
   display: flex;
   align-items: center;
