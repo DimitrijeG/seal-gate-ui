@@ -78,6 +78,13 @@ p.muted {
   cursor: not-allowed;
 }
 
+.button--quiet {
+  border: 1px solid var(--input-border);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 400;
+}
+
 /* Notices */
 
 .notice {
@@ -101,6 +108,12 @@ p.muted {
   border-radius: 10px;
   background: var(--sealed-bg);
   color: var(--navy-800);
+}
+
+.notice--done {
+  border-radius: 10px;
+  background: var(--unsealed-bg);
+  color: var(--unsealed-ink);
 }
 
 .notice__title {

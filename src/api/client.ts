@@ -15,10 +15,11 @@ export type Status = components['schemas']['StatusResponse']
 export const OPEN_OPERATIONS = new Set(['/sys/init', '/sys/unseal', '/sys/status', '/sys/health', '/auth/login'])
 
 // What the console knows about the server. `down` keeps the last status seen,
-// so the page can stay as it was behind the banner.
+// so the page can stay as it was behind the banner. `at` is when the server
+// last reported its status, in milliseconds since the epoch.
 export type Server =
   | { state: 'loading' }
-  | { state: 'up'; status: Status }
+  | { state: 'up'; status: Status; at: number }
   | { state: 'down'; status: Status | null }
 
 export const server = createStore<Server>({ state: 'loading' })
@@ -107,7 +108,7 @@ function markDown(): void {
 // Records a status the server returned, from polling or from init and
 // unseal, which answer with one.
 export function applyStatus(status: Status): void {
-  server.set({ state: 'up', status })
+  server.set({ state: 'up', status, at: Date.now() })
 }
 
 let inFlight: Promise<void> | null = null
