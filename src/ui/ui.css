@@ -101,6 +101,92 @@ p.muted {
   font-weight: 400;
 }
 
+/* A search field with its magnifier */
+
+.search-field {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--ink-muted);
+}
+
+.search-field svg {
+  position: absolute;
+  left: 12px;
+}
+
+.search-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.search-field--small input {
+  width: 220px;
+  padding-left: 36px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+/* A small segmented choice, as for Rules / JSON */
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--border);
+}
+
+.segmented button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.15);
+}
+
+/* Something removed, or not readable */
+
+.gone {
+  border: 1px dashed var(--dashed);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gone__name {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.denied {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 /* Notices */
 
 .notice {
