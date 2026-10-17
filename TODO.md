@@ -10,9 +10,12 @@ Kind and Expiry columns, Rotate only on generated secrets.
 
 ## Console
 
-- Design still missing: New secret form, restyled Secrets scope select.
-- Later: "Acting as" switcher (log in as another identity alongside root).
-  Skipped for now; the design's header select is not built.
+- Design still missing: New secret form, restyled Secrets scope select,
+  and a place for the signed-in identity with Sign out, Rotate token and
+  Revoke token.
+- Later: "Acting as" (a second identity alongside root). Skipped for now,
+  and with it the header switcher, "Act as this token", "Act as someone
+  else" on a 403, and the Policies "Try it" panel.
 
 ## Elsewhere
 
