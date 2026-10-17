@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { isBase64 } from './base64'
+import { encodeText, isBase64 } from './base64'
+
+describe('encodeText', () => {
+  it('encodes text as UTF-8 base64', () => {
+    expect(encodeText('')).toBe('')
+    expect(encodeText('hunter2')).toBe('aHVudGVyMg==')
+    expect(encodeText('šđčćž')).toBe('xaHEkcSNxIfFvg==')
+  })
+
+  it('encodes a value too large to spread at once', () => {
+    const big = 'a'.repeat(65536)
+    expect(atob(encodeText(big))).toBe(big)
+  })
+})
 
 describe('isBase64', () => {
   it('accepts standard base64, padded or a whole number of quads', () => {

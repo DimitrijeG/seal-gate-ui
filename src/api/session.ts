@@ -21,6 +21,13 @@ export function toIdentity(self: components['schemas']['TokenSelfResponse']): Id
   return null
 }
 
+// How the console names whoever is signed in: the alias, "root", or the
+// start of the entity ID when it has no alias.
+export function displayName(who: Identity): string {
+  if (who.root) return 'root'
+  return who.alias ?? `entity ${who.entityId.slice(0, 8)}`
+}
+
 function load(): string | null {
   try {
     return sessionStorage.getItem(KEY)

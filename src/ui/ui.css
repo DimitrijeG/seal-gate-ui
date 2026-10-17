@@ -78,6 +78,22 @@ p.muted {
   cursor: not-allowed;
 }
 
+.button--danger {
+  border: 1px solid var(--danger-border);
+  background: var(--card);
+  color: var(--danger);
+  font-weight: 400;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .button--quiet {
   border: 1px solid var(--input-border);
   background: var(--card);

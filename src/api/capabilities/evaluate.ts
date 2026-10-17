@@ -26,16 +26,34 @@ export function allows(rules: Rule[], resource: string, capability: Capability):
   return granted && !denied
 }
 
-// Whether the rules could allow anything at all under `prefix`, for deciding
-// whether a whole area of the console is worth offering. False when nothing
-// grants there, or a deny covers all of it.
-export function allowsAnythingUnder(rules: Rule[], prefix: string): boolean {
+// Whether the rules could allow anything at all under `prefix` (or, given a
+// capability, that one), for deciding whether a whole area or an action with
+// no resource yet is worth offering. False when nothing grants there, or a
+// deny covers all of it.
+export function allowsAnythingUnder(rules: Rule[], prefix: string, capability?: Capability): boolean {
   const overlaps = (pattern: string) =>
     pattern.endsWith('*')
       ? pattern.slice(0, -1).startsWith(prefix) || prefix.startsWith(pattern.slice(0, -1))
       : pattern.startsWith(prefix)
   const coversAll = (pattern: string) => pattern.endsWith('*') && prefix.startsWith(pattern.slice(0, -1))
+  const grants = (caps: Capability[]) =>
+    capability === undefined ? caps.some((c) => c !== 'deny') : caps.includes(capability)
 
   if (rules.some((r) => r.capabilities.includes('deny') && coversAll(r.path))) return false
-  return rules.some((r) => overlaps(r.path) && r.capabilities.some((c) => c !== 'deny'))
+  return rules.some((r) => overlaps(r.path) && grants(r.capabilities))
+}
+
+// The prefixes under `area` (itself included) that the rules let the token
+// list, read from rules that grant `list`: `secrets/dev/*` gives
+// `secrets/dev/`. For a token that cannot list everything, these are where
+// browsing can start.
+export function listablePrefixes(rules: Rule[], area: string): string[] {
+  const found = new Set<string>()
+  for (const rule of rules) {
+    if (!rule.capabilities.includes('list') || !rule.path.startsWith(area)) continue
+    const stem = rule.path.endsWith('*') ? rule.path.slice(0, -1) : rule.path
+    const prefix = stem.slice(0, stem.lastIndexOf('/') + 1)
+    if (prefix.length >= area.length && allows(rules, prefix, 'list')) found.add(prefix)
+  }
+  return [...found].sort()
 }

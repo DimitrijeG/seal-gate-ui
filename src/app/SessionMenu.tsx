@@ -2,14 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { api } from '../api/client'
 import { call, messageText } from '../api/result'
-import { type Identity, identity, signIn, signOut } from '../api/session'
+import { displayName, identity, signIn, signOut } from '../api/session'
 import { useStore } from '../lib/store'
 import { formatUtc } from '../lib/time'
-
-function displayName(who: Identity): string {
-  if (who.root) return 'root'
-  return who.alias ?? `entity ${who.entityId.slice(0, 8)}`
-}
 
 // Who is signed in, and what can be done with the session's token. Not in
 // design/: it takes the header spot of the skipped "Acting as" select.

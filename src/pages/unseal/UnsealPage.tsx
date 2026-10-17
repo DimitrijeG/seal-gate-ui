@@ -52,7 +52,7 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
       applyStatus(res.data)
       return
     }
-    if (res.error.kind === 'network') return // The banner says so.
+    if (res.error.kind !== 'http') return // The shell's banner says so.
     if (res.error.status === 400 && 'share' in body) {
       // The shares at the threshold did not combine; the server discarded
       // them all.

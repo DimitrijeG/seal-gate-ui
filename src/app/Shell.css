@@ -253,6 +253,11 @@
   gap: 24px;
 }
 
+.app-main--wide {
+  max-width: none;
+  gap: 20px;
+}
+
 .work-area {
   display: flex;
   flex-direction: column;

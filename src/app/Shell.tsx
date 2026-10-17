@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useMatches } from 'react-router'
 import { refreshStatus, server, startStatusPolling } from '../api/client'
 import { canAnythingUnder, capabilities, loadCapabilities, offers } from '../api/capabilities/capabilities'
 import { resources } from '../api/capabilities/resources'
@@ -48,6 +48,8 @@ export function Shell() {
   const [traceOn, setTraceOn] = useState(loadTraceOn)
   // Sign-in stands alone in the design: brand and status only.
   const bare = useLocation().pathname === '/login'
+  // Screens that browse and show a detail beside it use the full width.
+  const wide = useMatches().some((m) => (m.handle as { wide?: boolean } | undefined)?.wide === true)
 
   useEffect(() => startStatusPolling(), [])
 
@@ -123,7 +125,7 @@ export function Shell() {
       )}
 
       <div className="app-body">
-        <main className="app-main">
+        <main className={`app-main${wide ? ' app-main--wide' : ''}`}>
           <Outlet />
         </main>
         {traceOn && !bare && <TracePanel />}

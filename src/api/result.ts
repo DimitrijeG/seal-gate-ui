@@ -5,6 +5,9 @@ export type ApiError =
   | { kind: 'http'; status: number; messages: string[] }
   // No answer: the server is down or the network dropped.
   | { kind: 'network' }
+  // Sealed (503): every request fails the same way, and the shell's banner
+  // says so, so a screen does not repeat it.
+  | { kind: 'sealed' }
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError }
 
@@ -52,6 +55,7 @@ export async function call<T>(
   }
   const { response } = result
   if (isProxyFailure(response.status)) return { ok: false, error: { kind: 'network' } }
+  if (response.status === 503) return { ok: false, error: { kind: 'sealed' } }
   if (!response.ok) {
     return { ok: false, error: { kind: 'http', status: response.status, messages: errorMessages(response.status, result.error) } }
   }

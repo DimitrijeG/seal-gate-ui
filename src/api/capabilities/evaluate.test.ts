@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { type Rule, allows, allowsAnythingUnder, matches } from './evaluate'
+import { type Rule, allows, allowsAnythingUnder, listablePrefixes, matches } from './evaluate'
+
+describe('listablePrefixes', () => {
+  it('finds the folders a token may list', () => {
+    const rules: Rule[] = [
+      { path: 'secrets/dev/*', capabilities: ['read', 'list'] },
+      { path: 'secrets/db/postgres/', capabilities: ['list'] },
+      { path: 'secrets/ops/*', capabilities: ['read'] },
+      { path: 'system/policies', capabilities: ['list'] },
+    ]
+    expect(listablePrefixes(rules, 'secrets/')).toEqual(['secrets/db/postgres/', 'secrets/dev/'])
+  })
+
+  it('finds the whole area when everything is listable', () => {
+    expect(listablePrefixes([{ path: '*', capabilities: ['list'] }], 'secrets/')).toEqual([])
+    expect(listablePrefixes([{ path: 'secrets/*', capabilities: ['list'] }], 'secrets/')).toEqual(['secrets/'])
+  })
+
+  it('leaves out a prefix a deny covers', () => {
+    const rules: Rule[] = [
+      { path: 'secrets/dev/*', capabilities: ['list'] },
+      { path: 'secrets/dev/*', capabilities: ['deny'] },
+    ]
+    expect(listablePrefixes(rules, 'secrets/')).toEqual([])
+  })
+})
 
 describe('matches', () => {
   it('matches a path exactly', () => {
@@ -68,6 +93,12 @@ describe('allowsAnythingUnder', () => {
         'secrets/',
       ),
     ).toBe(false)
+  })
+
+  it('can ask about one capability', () => {
+    const rules: Rule[] = [{ path: 'secrets/dev/*', capabilities: ['read', 'list'] }]
+    expect(allowsAnythingUnder(rules, 'secrets/', 'read')).toBe(true)
+    expect(allowsAnythingUnder(rules, 'secrets/', 'create')).toBe(false)
   })
 
   it('does not let a narrower deny hide the whole area', () => {

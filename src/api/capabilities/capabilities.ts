@@ -94,12 +94,12 @@ export function can(caps: Capabilities, capability: Capability, resource: string
   }
 }
 
-export function canAnythingUnder(caps: Capabilities, prefix: string): Answer {
+export function canAnythingUnder(caps: Capabilities, prefix: string, capability?: Capability): Answer {
   switch (caps.state) {
     case 'root':
       return 'yes'
     case 'rules':
-      return allowsAnythingUnder(caps.rules, prefix) ? 'yes' : 'no'
+      return allowsAnythingUnder(caps.rules, prefix, capability) ? 'yes' : 'no'
     case 'unknown':
       return 'unknown'
     default:

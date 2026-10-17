@@ -53,6 +53,14 @@ describe('call', () => {
     }
   })
 
+  it('reports a sealed instance as its own kind', async () => {
+    const response = new Response(null, { status: 503 })
+    expect(await call(Promise.resolve({ error: { errors: ['the system is sealed'] }, response }))).toEqual({
+      ok: false,
+      error: { kind: 'sealed' },
+    })
+  })
+
   it('rethrows anything else', async () => {
     await expect(call(Promise.reject(new Error('bug')))).rejects.toThrow('bug')
   })

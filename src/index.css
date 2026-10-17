@@ -18,6 +18,10 @@
   --cyan-50: #e0f2f7;
   --input-border: #b6c2d2;
   --track: #e2e8f0;
+  --row-rule: #eef2f7;
+  --dashed: #b6c2d2;
+  --ink-faint: #8494a8;
+  --danger-border: #e2b4ae;
   --sealed-bg: #e1e8f2;
   --unsealed-bg: #d7f5ec;
   --unsealed-ink: #0b5d4b;
@@ -94,6 +98,7 @@ button:disabled {
 .button {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 40px;
   padding: 0 14px;
   border-radius: 8px;

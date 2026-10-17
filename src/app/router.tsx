@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from 'react-router'
 import { InitPage } from '../pages/init/InitPage'
 import { LoginPage } from '../pages/login/LoginPage'
 import { Placeholder } from '../pages/Placeholder'
+import { SecretsPage } from '../pages/secrets/SecretsPage'
 import { UnsealPage } from '../pages/unseal/UnsealPage'
 import { RequireSession, Start } from './guards'
 import { Shell } from './Shell'
@@ -17,7 +18,7 @@ export const router = createBrowserRouter([
       {
         element: <RequireSession />,
         children: [
-          { path: 'secrets/*', element: <Placeholder title="Secrets" /> },
+          { path: 'secrets/*', element: <SecretsPage />, handle: { wide: true } },
           { path: 'identity/*', element: <Placeholder title="Identity" /> },
           { path: 'policies/*', element: <Placeholder title="Policies" /> },
         ],
