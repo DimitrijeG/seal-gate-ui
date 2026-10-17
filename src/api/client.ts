@@ -26,6 +26,10 @@ export const server = createStore<Server>({ state: 'loading' })
 
 export const POLL_MS = 5000
 
+// Counts 403 answers, so what the console believes the token may do can be
+// read again when the server disagrees.
+export const refusals = createStore(0)
+
 // Same origin: the dev server, and the reverse proxy in deployment, forward
 // /v1 to seal-gate.
 export const api = createClient<paths>({ baseUrl: '/v1', pathSerializer: serializePath })
@@ -79,6 +83,7 @@ const middleware: Middleware = {
     if (response.status === 401 && sentToken !== null && sentToken === token.get()) {
       endSession()
     }
+    if (response.status === 403) refusals.set((n) => n + 1)
     if (schemaPath !== '/sys/status' && (response.status === 503 || server.get().state === 'down')) {
       void refreshStatus()
     }

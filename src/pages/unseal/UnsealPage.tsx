@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router'
+import { useCan } from '../../api/capabilities/capabilities'
+import { resources } from '../../api/capabilities/resources'
 import { type Status, api, applyStatus, refreshStatus, server } from '../../api/client'
 import { call, messageText } from '../../api/result'
 import { token } from '../../api/session'
@@ -30,6 +32,7 @@ export function UnsealPage() {
 
 function UnsealCard({ status, at }: { status: Status; at: number | null }) {
   const signedIn = useStore(token) !== null
+  const canSeal = useCan('update', resources.seal)
   const [share, setShare] = useState('')
   const [sending, setSending] = useState(false)
   // The last outcome worth saying in place; cleared by the next action.
@@ -84,7 +87,7 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
             <p>The key is rebuilt and in memory. Sealing discards it; the shares are needed again.</p>
           </div>
           {signedIn ? (
-            <SealButton />
+            canSeal && <SealButton />
           ) : (
             <Link className="button button--primary button--lg" to="/login">
               Sign in

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { refreshStatus, server, startStatusPolling } from '../api/client'
+import { canAnythingUnder, capabilities, loadCapabilities, offers } from '../api/capabilities/capabilities'
+import { resources } from '../api/capabilities/resources'
 import { loadIdentity } from '../api/identity'
 import { identity, token } from '../api/session'
 import { useStore } from '../lib/store'
@@ -10,6 +12,14 @@ import { SessionMenu } from './SessionMenu'
 import { StatusPill } from './StatusPill'
 import { TracePanel } from './TracePanel'
 import './Shell.css'
+
+// The resources behind each working screen; a screen is offered while the
+// token may do anything under one of them.
+const AREAS: Record<string, string[]> = {
+  '/secrets': ['secrets/'],
+  '/identity': [resources.entities, resources.groups, resources.users],
+  '/policies': [resources.policies],
+}
 
 // Whether the trace is open is a per-tab convenience, not a secret.
 const TRACE_KEY = 'seal-gate.trace'
@@ -43,12 +53,25 @@ export function Shell() {
 
   const status = srv.state === 'loading' ? null : srv.status
   const unsealed = status !== null && status.initialized && !status.sealed
+  // Changes with every status poll, so a read that failed is tried again.
+  const polled = srv.state === 'up' ? srv.at : 0
 
   // Whom the token speaks for, read once it can be: a sealed instance
   // answers nothing but status.
   useEffect(() => {
     if (currentToken !== null && who === null && unsealed) void loadIdentity()
-  }, [currentToken, who, unsealed])
+  }, [currentToken, who, unsealed, polled])
+
+  // Then what it may do, so the console offers only that.
+  const caps = useStore(capabilities)
+  useEffect(() => {
+    if (who !== null && caps.state === 'none' && unsealed) void loadCapabilities()
+  }, [who, caps.state, unsealed, polled])
+
+  const offered = (to: string) => {
+    const areas = AREAS[to] ?? []
+    return areas.some((prefix) => offers(canAnythingUnder(caps, prefix)))
+  }
 
   const toggleTrace = () => {
     setTraceOn(!traceOn)
@@ -66,7 +89,7 @@ export function Shell() {
           {!bare && (
             <>
               <nav aria-label="Main" className="app-nav">
-                {navItems(status, signedIn).map((item) => (
+                {navItems(status, signedIn, offered).map((item) => (
                   <NavLink key={item.to} to={item.to} className="app-nav__link">
                     {item.label}
                   </NavLink>

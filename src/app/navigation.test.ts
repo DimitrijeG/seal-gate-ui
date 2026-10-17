@@ -26,6 +26,11 @@ describe('navItems', () => {
   it('offers the working screens once unsealed and signed in', () => {
     expect(labels(unsealed, true)).toEqual(['Unseal', 'Secrets', 'Identity', 'Policies'])
   })
+
+  it('leaves out a working screen the token surely cannot use', () => {
+    const items = navItems(unsealed, true, (to) => to !== '/policies').map((i) => i.label)
+    expect(items).toEqual(['Unseal', 'Secrets', 'Identity'])
+  })
 })
 
 describe('startPath', () => {
