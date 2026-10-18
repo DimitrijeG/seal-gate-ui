@@ -11,3 +11,6 @@ dist/
 test-results/
 playwright-report/
 blob-report/
+
+# Deployment settings
+deploy/.env

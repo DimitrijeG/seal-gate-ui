@@ -1,0 +1,32 @@
+# seal-gate on bolt behind the console. Run from this directory; settings come from .env.
+# For postgres instead: docker compose -f compose.yaml -f compose.postgres.yaml up -d
+name: seal-gate
+
+services:
+  seal-gate:
+    image: ghcr.io/dimitrijeg/seal-gate:${SEAL_GATE_TAG:-latest}
+    restart: unless-stopped
+    volumes:
+      - seal-gate-data:/data
+    # Loopback only: reached over an SSH tunnel to initialize and administer, never from outside.
+    ports:
+      - 127.0.0.1:8080:8080
+
+  console:
+    image: ghcr.io/dimitrijeg/seal-gate-ui:${CONSOLE_TAG:-latest}
+    restart: unless-stopped
+    depends_on: [seal-gate]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  seal-gate-data:
+  caddy-data:
+  caddy-config:

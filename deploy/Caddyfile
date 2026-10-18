@@ -1,0 +1,41 @@
+# One origin for the console and the API, since seal-gate sends no CORS headers.
+# SITE_ADDRESS is the public domain; localhost gets a certificate from Caddy's own local CA.
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	handle /v1/* {
+		route {
+			# Per client address. Login is tight because each attempt costs seal-gate a memory-hard hash.
+			rate_limit {
+				zone login {
+					match {
+						method POST
+						path /v1/auth/login
+					}
+					key {remote_host}
+					events 10
+					window 1m
+				}
+				zone api {
+					key {remote_host}
+					events 300
+					window 1m
+				}
+			}
+			reverse_proxy {$SEAL_GATE_UPSTREAM:seal-gate:8080}
+		}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

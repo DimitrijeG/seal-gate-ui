@@ -1,0 +1,28 @@
+# Layered over compose.yaml: seal-gate stores in postgres; its audit log stays on its own volume.
+services:
+  seal-gate:
+    command: ["-config", "/etc/seal-gate/postgres.yaml"]
+    environment:
+      SEAL_GATE_STORAGE_URL: postgres://seal_gate:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/seal_gate?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seal_gate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: seal_gate
+    # postgres 18 keeps its data in a versioned directory under this one.
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "seal_gate"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  postgres-data:
