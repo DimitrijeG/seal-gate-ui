@@ -1,0 +1,169 @@
+import { type APIRequestContext, type Page, expect, test } from '@playwright/test'
+import { freshSealGate } from './seal-gate.ts'
+
+const gate = freshSealGate()
+let root: Record<string, string> = {}
+let rootToken = ''
+
+// The rules of design/Policies.dc.html's example.
+const devRead = [
+  { path: 'secrets/dev/*', capabilities: ['read', 'list'] },
+  { path: 'secrets/shared/config/*', capabilities: ['read', 'list'] },
+  { path: 'secrets/dev/feature-flags', capabilities: ['read', 'update'] },
+  { path: 'secrets/db/postgres/*', capabilities: ['list'] },
+  { path: 'secrets/dev/admin-key', capabilities: ['deny'] },
+]
+
+const names = (page: Page) => page.getByRole('list', { name: 'Policy names' }).getByRole('listitem')
+const grid = (page: Page) => page.getByRole('table')
+const square = (page: Page, row: number, capability: string) => page.getByRole('button', { name: `Rule ${row}: ${capability}`, exact: true })
+
+async function putPolicy(request: APIRequestContext, name: string, rules: unknown[]) {
+  expect((await request.put(`${gate.api}/policies/${name}`, { headers: root, data: { rules } })).status()).toBe(204)
+}
+
+async function rulesOf(request: APIRequestContext, name: string) {
+  const res = await request.get(`${gate.api}/policies/${name}`, { headers: root })
+  return ((await res.json()) as { rules: { path: string; capabilities: string[] }[] }).rules
+}
+
+async function signIn(page: Page, token: string, at: string) {
+  await page.goto('/unseal')
+  await page.evaluate((t) => sessionStorage.setItem('seal-gate.token', t), token)
+  await page.goto(at)
+}
+
+test.beforeAll(async ({ request }) => {
+  const init = (await (await request.post(`${gate.api}/sys/init`, { data: { shares: 2, threshold: 2 } })).json()) as {
+    shares: string[]
+    root_token: string
+  }
+  for (const share of init.shares) await request.post(`${gate.api}/sys/unseal`, { data: { share } })
+  rootToken = init.root_token
+  root = { Authorization: `Bearer ${rootToken}` }
+  await putPolicy(request, 'dev-read', devRead)
+  await putPolicy(request, 'legacy', [{ path: 'secrets/legacy/*', capabilities: ['read', 'manage'] }])
+})
+
+test('the list shows names, and a policy opens as a grid without manage', async ({ page }) => {
+  await signIn(page, rootToken, '/policies')
+  await expect(names(page)).toHaveText(['dev-read', 'legacy'])
+  await expect(page.getByPlaceholder('Find among 2')).toBeVisible()
+
+  await names(page).filter({ hasText: 'dev-read' }).getByRole('link').click()
+  await expect(page).toHaveURL('/policies/dev-read')
+  await expect(page.getByText('5 rules')).toBeVisible()
+  await expect(grid(page).getByRole('columnheader')).toHaveText(['Path', 'create', 'read', 'update', 'delete', 'list', 'rotate', 'deny', 'Remove'])
+  await expect(page.getByRole('textbox', { name: 'Rule 5 path' })).toHaveValue('secrets/dev/admin-key')
+  await expect(square(page, 5, 'deny')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText('All changes saved')).toBeVisible()
+})
+
+test('changes are counted, can be discarded, and are saved', async ({ page, request }) => {
+  await signIn(page, rootToken, '/policies/dev-read')
+  await square(page, 1, 'update').click()
+  await expect(page.getByText('1 unsaved change, ringed in the table')).toBeVisible()
+  await page.getByRole('button', { name: 'Discard' }).click()
+  await expect(page.getByText('All changes saved')).toBeVisible()
+
+  await square(page, 1, 'update').click()
+  await square(page, 4, 'read').click()
+  await expect(page.getByText('2 unsaved changes, ringed in the table')).toBeVisible()
+  await page.getByRole('button', { name: 'Save policy' }).click()
+  await expect(page.getByText('All changes saved')).toBeVisible()
+  const rules = await rulesOf(request, 'dev-read')
+  expect(rules[0]?.capabilities.sort()).toEqual(['list', 'read', 'update'])
+  expect(rules[3]?.capabilities.sort()).toEqual(['list', 'read'])
+})
+
+test('an invalid rule is caught before saving', async ({ page }) => {
+  await signIn(page, rootToken, '/policies/dev-read')
+  await page.getByRole('textbox', { name: 'Rule 2 path' }).fill('secrets/*/config')
+  await expect(page.getByText('Rule 2: * only at the end.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save policy' })).toBeDisabled()
+
+  await page.getByRole('textbox', { name: 'Rule 2 path' }).fill('secrets/shared/config/*')
+  await page.getByRole('button', { name: 'Add rule' }).click()
+  await expect(page.getByText('Rule 6: Enter a path.')).toBeVisible()
+  await page.getByRole('textbox', { name: 'Rule 6 path' }).fill('secrets/ops/*')
+  await expect(page.getByText('Rule 6: Tick at least one capability.')).toBeVisible()
+  await page.getByRole('button', { name: 'Remove rule 6' }).click()
+  await expect(page.getByText('All changes saved')).toBeVisible()
+})
+
+test('leaving with unsaved changes asks first', async ({ page }) => {
+  await signIn(page, rootToken, '/policies/dev-read')
+  await square(page, 2, 'rotate').click()
+  page.once('dialog', (dialog) => void dialog.dismiss())
+  await names(page).filter({ hasText: 'legacy' }).getByRole('link').click()
+  await expect(page).toHaveURL('/policies/dev-read')
+  await expect(page.getByText('1 unsaved change, ringed in the table')).toBeVisible()
+})
+
+test('a rule holding manage keeps it through an edit', async ({ page, request }) => {
+  await signIn(page, rootToken, '/policies/legacy')
+  await page.getByRole('button', { name: 'JSON' }).click()
+  await expect(page.getByLabel('JSON of legacy')).toContainText('"manage"')
+  await page.getByRole('button', { name: 'Rules' }).click()
+  await square(page, 1, 'list').click()
+  await page.getByRole('button', { name: 'Save policy' }).click()
+  await expect(page.getByText('All changes saved')).toBeVisible()
+  expect((await rulesOf(request, 'legacy'))[0]?.capabilities.sort()).toEqual(['list', 'manage', 'read'])
+})
+
+test('a new policy is named, given rules, and created', async ({ page }) => {
+  await signIn(page, rootToken, '/policies')
+  await page.getByRole('link', { name: 'New' }).click()
+  const name = page.getByRole('textbox', { name: 'Name' })
+  await name.fill('legacy')
+  await expect(page.getByText('A policy with this name exists.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Create policy' })).toBeDisabled()
+
+  await name.fill('ops')
+  await page.getByRole('textbox', { name: 'Rule 1 path' }).fill('secrets/ops/*')
+  await square(page, 1, 'read').click()
+  await page.getByRole('button', { name: 'Create policy' }).click()
+  await expect(page).toHaveURL('/policies/ops')
+  await expect(names(page)).toHaveText(['dev-read', 'legacy', 'ops'])
+  await expect(page.getByText('All changes saved')).toBeVisible()
+})
+
+test('deleting asks first, then removes it from the list', async ({ page }) => {
+  await signIn(page, rootToken, '/policies/ops')
+  await page.getByRole('button', { name: 'Delete policy' }).click()
+  await expect(page.getByText(/Delete ops for good\?/)).toBeVisible()
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(page).toHaveURL('/policies')
+  await expect(names(page)).toHaveText(['dev-read', 'legacy'])
+})
+
+test('a policy deleted after the list loaded says so', async ({ page, request }) => {
+  await putPolicy(request, 'doomed', [])
+  await signIn(page, rootToken, '/policies')
+  await expect(names(page)).toHaveText(['dev-read', 'doomed', 'legacy'])
+  await request.delete(`${gate.api}/policies/doomed`, { headers: root })
+  await names(page).filter({ hasText: 'doomed' }).getByRole('link').click()
+  await expect(page.getByText('No longer exists. Someone deleted it.')).toBeVisible()
+  await page.getByRole('button', { name: 'Refresh list' }).click()
+  await expect(names(page)).toHaveText(['dev-read', 'legacy'])
+})
+
+test('a token that may only read policies sees them, and cannot change them', async ({ page, request }) => {
+  await putPolicy(request, 'policy-reader', [
+    { path: 'system/entities/*', capabilities: ['read'] },
+    { path: 'system/policies', capabilities: ['list'] },
+    { path: 'system/policies/*', capabilities: ['read'] },
+  ])
+  const entity = await request.post(`${gate.api}/entities`, { headers: root, data: { policies: ['policy-reader'] } })
+  const { id } = (await entity.json()) as { id: string }
+  const issued = await request.post(`${gate.api}/entities/${id}/tokens`, { headers: root, data: {} })
+  const { token } = (await issued.json()) as { token: string }
+
+  await signIn(page, token, '/policies/dev-read')
+  await expect(page.getByText('This token may read this policy, not change it.')).toBeVisible()
+  await expect(square(page, 1, 'read')).toBeDisabled()
+  await expect(page.getByRole('textbox', { name: 'Rule 1 path' })).toHaveAttribute('readonly', '')
+  await expect(page.getByRole('button', { name: 'Add rule' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Delete policy' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'New' })).toHaveCount(0)
+})

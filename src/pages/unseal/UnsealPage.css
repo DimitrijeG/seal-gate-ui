@@ -1,0 +1,140 @@
+.unseal {
+  gap: 24px;
+}
+
+.unseal__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.unseal__badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.unseal__badge--sealed {
+  background: var(--sealed-bg);
+  color: var(--navy-800);
+}
+
+.unseal__badge--unsealed {
+  background: var(--unsealed-bg);
+  color: var(--unsealed-ink);
+}
+
+.unseal__state-text {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unseal__state-text h2 {
+  font-size: 22px;
+}
+
+.unseal__state-text p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.unseal__seal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.unseal__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unseal__progress-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.unseal__progress-text {
+  font-weight: 600;
+}
+
+.unseal__segments {
+  display: flex;
+  gap: 8px;
+}
+
+.unseal__segments .unseal__seg {
+  flex: 1 1 0;
+}
+
+.unseal__track {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.unseal__seg {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--track);
+}
+
+.unseal__seg--filled {
+  background: var(--cyan-600);
+}
+
+.unseal__seg--done {
+  background: var(--unsealed-ink);
+}
+
+.unseal__alert {
+  font-size: 15px;
+}
+
+.unseal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.unseal__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unseal__input {
+  flex: 1 1 320px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.unseal__submit {
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: 16px;
+}
+
+.unseal__reset {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}

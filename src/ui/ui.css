@@ -1,0 +1,309 @@
+/* Building blocks shared by the screens, with values from design/. */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.muted {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+p.muted {
+  margin: 0;
+}
+
+/* Fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-weight: 500;
+}
+
+.field__input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: var(--font-mono);
+}
+
+.field__input[aria-invalid='true'] {
+  border: 1.5px solid var(--warn-border);
+}
+
+.field__hint {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.field__hint--error {
+  color: var(--warn-ink);
+}
+
+/* Buttons */
+
+.button--lg {
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+.button--outline {
+  gap: 8px;
+  border: 1px solid var(--navy-900);
+  background: var(--card);
+  color: var(--navy-900);
+}
+
+.button--primary:disabled {
+  cursor: not-allowed;
+}
+
+.button--danger {
+  border: 1px solid var(--danger-border);
+  background: var(--card);
+  color: var(--danger);
+  font-weight: 400;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.button--quiet {
+  border: 1px solid var(--input-border);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 400;
+}
+
+/* A search field with its magnifier */
+
+.search-field {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--ink-muted);
+}
+
+.search-field svg {
+  position: absolute;
+  left: 12px;
+}
+
+.search-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.search-field--small input {
+  width: 220px;
+  padding-left: 36px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+/* A small segmented choice, as for Rules / JSON */
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--border);
+}
+
+.segmented button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.15);
+}
+
+/* Something removed, or not readable */
+
+.gone {
+  border: 1px dashed var(--dashed);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gone__name {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.denied {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+/* Notices */
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.notice--warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink-strong);
+}
+
+.notice--info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--sealed-bg);
+  color: var(--navy-800);
+}
+
+.notice--done {
+  border-radius: 10px;
+  background: var(--unsealed-bg);
+  color: var(--unsealed-ink);
+}
+
+.notice__title {
+  font-weight: 600;
+}
+
+.alert {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  font-size: 14px;
+}
+
+/* A secret with Reveal and Copy */
+
+.secret-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secret-row__label {
+  width: 88px;
+  font-weight: 500;
+}
+
+.secret-row__value {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.secret-row__value--shown {
+  overflow-wrap: anywhere;
+  box-shadow: inset 0 0 0 1px var(--cyan-600);
+}
+
+.secret-row__value--hidden {
+  letter-spacing: 2px;
+}
+
+.secret-row__button {
+  width: 88px;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.secret-row__button--on {
+  border-color: var(--cyan-600);
+  background: var(--cyan-50);
+  color: var(--cyan-800);
+}
+
+/* A square button carrying only an icon */
+
+.button--icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Errors.dc's 500: the server broke, and Retry is the only move */
+
+.server-fault {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn-ink-strong);
+  font-size: 14px;
+}
+
+.server-fault button {
+  margin-left: auto;
+}

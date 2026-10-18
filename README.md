@@ -34,6 +34,12 @@ SEAL_GATE_URL=http://host:port npm run dev   # proxy somewhere else
 npm run api:types        # regenerate src/api/schema.d.ts after a spec update
 npm run build            # type-check and build into dist/
 npm run lint
+npm test                 # unit tests (vitest)
 npx playwright install chromium   # once
-npm run test:e2e         # starts the dev server itself
+npm run test:e2e         # end-to-end tests (Playwright)
 ```
+
+The end-to-end tests run against real seal-gate instances: they build it
+from `../seal-gate` (or `SEAL_GATE_DIR`), which needs Go, and give each spec
+file a fresh instance in memory on a free port, with the console on 5174. They
+never touch a development server or its data.

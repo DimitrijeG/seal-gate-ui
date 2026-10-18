@@ -1,17 +1,54 @@
 /* Base styles from design/: navy header, cyan accents, IBM Plex. */
 :root {
   --navy-900: #0f2a47;
+  --navy-800: #1e3a5f;
   --navy-700: #1c3d63;
   --navy-500: #3a5a80;
   --ink: #0f1b2d;
+  --ink-soft: #3b4a5e;
   --ink-muted: #4a5568;
   --header-muted: #c9d6e8;
   --surface: #f2f5f9;
   --card: #ffffff;
   --border: #e6ecf3;
+  --border-strong: #d5dde8;
+  --cyan-600: #0e7490;
   --cyan-700: #0e6582;
   --cyan-800: #0b4f63;
+  --cyan-50: #e0f2f7;
+  --cyan-300: #7fb8c9;
+  --input-border: #b6c2d2;
+  --track: #e2e8f0;
+  --row-rule: #eef2f7;
+  --dashed: #b6c2d2;
+  --ink-faint: #8494a8;
+  --danger-border: #e2b4ae;
+  --square-border: #c9d3e0;
+  --deny-row: #fffaf9;
+  --deny-border: #ebcfca;
+  --deny-on: #fce8e5;
+  --deny-on-border: #d9897f;
+  --ring: #b9e1ec;
+  --sealed-bg: #e1e8f2;
+  --unsealed-bg: #d7f5ec;
+  --unsealed-ink: #0b5d4b;
   --danger: #a1342a;
+  --danger-bg: #fcedeb;
+  --danger-ink: #9b2c22;
+  --warn-bg: #fcefd9;
+  --warn-ink-strong: #6e3503;
+  --warn-ink: #8a4204;
+  --warn-border: #c2410c;
+
+  --trace-bg: #0b1a2e;
+  --trace-rule: #1f3350;
+  --trace-ink: #e2e8f0;
+  --trace-muted: #9fb0c6;
+  --trace-path: #c3d0e0;
+  --trace-ok-bg: #0e4a5c;
+  --trace-ok-ink: #c7f0fa;
+  --trace-bad-bg: #5c2a0c;
+  --trace-bad-ink: #ffd9b8;
 
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
@@ -44,4 +81,46 @@ textarea {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page-head h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.page-head p {
+  margin: 0;
+  color: var(--ink-muted);
+  max-width: 680px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 0;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: var(--navy-900);
+  color: #ffffff;
+}
+
+.button--primary:hover {
+  color: #ffffff;
 }
