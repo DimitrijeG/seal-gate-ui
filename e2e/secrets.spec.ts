@@ -165,8 +165,6 @@ test('a generated secret overwritten meanwhile is not rotated', async ({ page, r
 test('a token limited to one folder starts there and sees only what it may do', async ({ page, request }) => {
   const policy = {
     rules: [
-      { path: 'system/entities/*', capabilities: ['read'] },
-      { path: 'system/policies/*', capabilities: ['read'] },
       { path: 'secrets/dev/*', capabilities: ['read', 'list'] },
       { path: 'secrets/db/*', capabilities: ['list'] },
     ],
@@ -177,6 +175,12 @@ test('a token limited to one folder starts there and sees only what it may do', 
   const issued = await request.post(`${gate.api}/entities/${id}/tokens`, { headers: root, data: {} })
   const { token } = (await issued.json()) as { token: string }
 
+  // Knowing its rules, the console never asks for what it would be refused.
+  const refused: string[] = []
+  page.on('response', (res) => {
+    if (res.status() === 403) refused.push(res.url())
+  })
+
   await signIn(page, token)
   await expect(page.getByText('This token may not list every secret. It may list these folders:')).toBeVisible()
   await expect(rows(page)).toHaveText(['db/', 'dev/'])
@@ -186,6 +190,7 @@ test('a token limited to one folder starts there and sees only what it may do', 
   await rows(page).filter({ hasText: 'generated' }).getByRole('link').click()
   await expect(detail(page).getByText('Stored · 9 bytes')).toBeVisible()
   await expect(detail(page).getByRole('button', { name: 'Delete' })).toHaveCount(0)
+  expect(refused).toEqual([])
 
   // Listing db/ is allowed, reading in it is not.
   await page.goto('/secrets/db/redis')

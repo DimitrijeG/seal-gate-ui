@@ -5,14 +5,6 @@ const gate = freshSealGate()
 let root: Record<string, string> = {}
 let shares: string[] = []
 
-// Lets an entity read itself, its groups and its policies, so the console can
-// work out what it may do.
-const knowSelf = [
-  { path: 'system/entities/*', capabilities: ['read'] },
-  { path: 'system/groups/*', capabilities: ['read'] },
-  { path: 'system/policies/*', capabilities: ['read'] },
-]
-
 async function put(request: APIRequestContext, path: string, data: unknown) {
   const res = await request.put(`${gate.api}${path}`, { headers: root, data })
   expect(res.status(), path).toBe(204)
@@ -42,45 +34,48 @@ test.beforeAll(async ({ request }) => {
   shares = init.shares
   for (const share of shares) await request.post(`${gate.api}/sys/unseal`, { data: { share } })
   root = { Authorization: `Bearer ${init.root_token}` }
-  await put(request, '/policies/know-self', { rules: knowSelf })
   await put(request, '/policies/dev-read', { rules: [{ path: 'secrets/dev/*', capabilities: ['read', 'list'] }] })
   await put(request, '/policies/sealer', { rules: [{ path: 'system/seal', capabilities: ['update'] }] })
 })
 
 test('known rules hide what the token cannot do', async ({ page, request }) => {
-  const bob = await entityWith(request, { policies: ['know-self', 'dev-read'] })
+  const bob = await entityWith(request, { policies: ['dev-read'] })
   await signInAs(page, request, bob)
   await page.getByRole('button', { name: 'API trace' }).click()
 
-  // The console read bob's own entity and policies to find out.
+  // One call says what bob may do; nothing of his is read to work it out.
   const trace = page.getByRole('complementary', { name: 'API trace' })
-  await expect(trace).toContainText(`/v1/entities/${bob}`)
-  await expect(trace).toContainText('/v1/policies/dev-read')
+  await expect(trace).toContainText('/v1/auth/token/self/rules')
+  await expect(trace).not.toContainText(`/v1/entities/${bob}`)
+  await expect(trace).not.toContainText('/v1/policies/')
 
-  await expect(nav(page)).toHaveText(['Unseal', 'Secrets', 'Identity', 'Policies'])
+  await expect(nav(page)).toHaveText(['Unseal', 'Secrets'])
   await expect(page.getByRole('heading', { name: 'Unsealed', level: 2 })).toBeVisible()
   await expect(sealNow(page)).toHaveCount(0)
 })
 
 test('a screen with nothing the token may do there is not offered', async ({ page, request }) => {
-  const carol = await entityWith(request, { policies: ['know-self'] })
+  const carol = await entityWith(request, {})
   await signInAs(page, request, carol)
-  await expect(nav(page)).toHaveText(['Unseal', 'Identity', 'Policies'])
+  await expect(nav(page)).toHaveText(['Unseal'])
 })
 
 test('policies that come through a group count', async ({ page, request }) => {
   const group = await request.post(`${gate.api}/groups`, { headers: root, data: { policies: ['sealer'] } })
   const { id: sealers } = (await group.json()) as { id: string }
-  const erin = await entityWith(request, { policies: ['know-self'], groups: [sealers] })
+  const erin = await entityWith(request, { groups: [sealers] })
   await signInAs(page, request, erin)
   await expect(sealNow(page)).toBeVisible()
 })
 
-test('rules it cannot read leave the server to decide', async ({ page, request }) => {
-  // Dave may seal but not read himself, so the console cannot know: it
-  // offers everything and lets the server answer.
+test('rules the server could not report leave it to decide', async ({ page, request }) => {
   const dave = await entityWith(request, { policies: ['sealer'] })
+  await page.route('**/v1/auth/token/self/rules', (route) =>
+    route.fulfill({ status: 500, json: { errors: ['internal error'] } }),
+  )
   await signInAs(page, request, dave)
+
+  // Not knowing, the console offers everything and lets the server answer.
   await expect(nav(page)).toHaveText(['Unseal', 'Secrets', 'Identity', 'Policies'])
   await sealNow(page).click()
   await expect(page.getByRole('heading', { name: 'Sealed', level: 2 })).toBeVisible()
@@ -89,12 +84,12 @@ test('rules it cannot read leave the server to decide', async ({ page, request }
 test('a refusal after the rules changed reads them again', async ({ page, request }) => {
   // The previous test sealed the instance.
   for (const share of shares) await request.post(`${gate.api}/sys/unseal`, { data: { share } })
-  const frank = await entityWith(request, { policies: ['know-self', 'sealer'] })
+  const frank = await entityWith(request, { policies: ['sealer'] })
   await signInAs(page, request, frank)
   await expect(sealNow(page)).toBeVisible()
 
   // An admin takes sealing away while the page is open.
-  await put(request, `/entities/${frank}`, { policies: ['know-self'] })
+  await put(request, `/entities/${frank}`, { policies: [] })
   await sealNow(page).click()
 
   // The server refuses; the console reads the rules again and stops offering it.

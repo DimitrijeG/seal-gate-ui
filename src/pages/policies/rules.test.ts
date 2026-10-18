@@ -3,8 +3,7 @@ import type { Rule } from '../../api/capabilities/evaluate'
 import { COLUMNS, cellChanged, countChanges, nameProblem, ruleProblem, rulePathProblem, toggle } from './rules'
 
 describe('COLUMNS', () => {
-  it('leaves out manage, which seal-gate never checks', () => {
-    expect(COLUMNS).not.toContain('manage')
+  it('has a column for every capability', () => {
     expect(COLUMNS).toEqual(['create', 'read', 'update', 'delete', 'list', 'rotate', 'deny'])
   })
 })
@@ -65,9 +64,5 @@ describe('changes', () => {
     expect(cellChanged(saved, draft, 0, 'list')).toBe(false)
     expect(countChanges(saved, [...draft, { path: '', capabilities: [] }])).toBe(4)
     expect(countChanges(saved, [saved[0]!])).toBe(1)
-  })
-
-  it('counts a change to manage, which the grid does not show', () => {
-    expect(countChanges([{ path: '*', capabilities: ['manage'] }], [{ path: '*', capabilities: [] }])).toBe(1)
   })
 })

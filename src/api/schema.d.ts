@@ -35,7 +35,7 @@ export interface paths {
         put?: never;
         /**
          * Submit one unseal share, or discard the buffered ones.
-         * @description Open by design: a sealed instance cannot check a token. Shares are buffered until the threshold is reached, then combined; a failed combination discards the buffer. A reset discards it on request, so a partial unseal can start over.
+         * @description Open by design: a sealed instance cannot check a token. Shares are buffered until the threshold is reached, then combined; a failed combination discards the buffer. A share already buffered is refused with 409 and the buffer kept. A reset discards it on request, so a partial unseal can start over; ten minutes with no accepted share discard it too.
          */
         post: operations["unseal"];
         delete?: never;
@@ -113,7 +113,7 @@ export interface paths {
         };
         /**
          * List the paths of stored secrets, optionally under a prefix.
-         * @description Returns every path under the prefix, at any depth, never the values. A secret written by `PUT` whose TTL has passed is left out. Needs `list` on `secrets/<prefix>`.
+         * @description Returns every path under the prefix, at any depth, never the values. A secret written by `PUT` whose TTL has passed is left out, as is a path the caller is not granted `list` on, such as one a `deny` rule matches. Needs `list` on `secrets/<prefix>`.
          */
         get: operations["listSecrets"];
         put?: never;
@@ -402,6 +402,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/token/self/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report the rules the presented token is checked against.
+         * @description Needs no capability: a token's own grants are its holder's to see. The root token is reported as `{"root": true}` alone, since it passes every check without rules. Any other token gets the rules of every policy it holds, directly or through a group, as stored: in policy order, not merged, so a `deny` beside a grant on the same path is kept. A policy that no longer exists contributes no rules; one that cannot be read fails the request rather than answer with fewer rules.
+         */
+        get: operations["lookupSelfRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -645,7 +665,7 @@ export interface components {
              * @example secrets/dev/*
              */
             path: string;
-            capabilities: ("create" | "read" | "update" | "delete" | "list" | "rotate" | "manage" | "deny")[];
+            capabilities: ("create" | "read" | "update" | "delete" | "list" | "rotate" | "deny")[];
         };
         /**
          * @description 16 random bytes in lowercase hex.
@@ -695,6 +715,15 @@ export interface components {
              * @description In UTC. The token is refused from this instant on.
              */
             expires_at?: string;
+        } & ({
+            /** @constant */
+            root: true;
+        } | unknown);
+        /** @description Either `root` alone, or the rules. */
+        TokenRulesResponse: {
+            root?: boolean;
+            /** @description Empty for a token holding no rules, never null. */
+            rules?: components["schemas"]["Rule"][];
         } & ({
             /** @constant */
             root: true;
@@ -1533,6 +1562,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenSelfResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["Sealed"];
+        };
+    };
+    lookupSelfRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The presented token's rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenRulesResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
