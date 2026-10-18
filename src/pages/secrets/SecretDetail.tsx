@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useCan } from '../../api/capabilities/capabilities'
 import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
-import { call, messageText } from '../../api/result'
+import { call, isServerFault, messageText } from '../../api/result'
 import type { components } from '../../api/schema'
 import { displayName, identity } from '../../api/session'
 import { useStore } from '../../lib/store'
 import { formatUtcFull } from '../../lib/time'
 import { CopyButton } from '../../ui/CopyButton'
 import { HIDDEN } from '../../ui/SecretRow'
+import { ServerFault } from '../../ui/ServerFault'
 import { baseName, decodedLength, formatDuration } from './paths'
 
 type Secret = components['schemas']['SecretReadResponse']
@@ -18,6 +19,7 @@ type Detail =
   | { state: 'ok'; secret: Secret }
   | { state: 'gone' }
   | { state: 'forbidden' }
+  | { state: 'fault' }
   | { state: 'error'; messages: string[] }
 
 // One secret: its value, kind and timing, and what may be done with it.
@@ -42,6 +44,7 @@ export function SecretDetail({ path, onGone }: { path: string; onGone: () => voi
       else if (res.error.kind !== 'http') return // The shell's banner says so.
       else if (res.error.status === 404) setDetail({ state: 'gone' })
       else if (res.error.status === 403) setDetail({ state: 'forbidden' })
+      else if (isServerFault(res.error)) setDetail({ state: 'fault' })
       else setDetail({ state: 'error', messages: res.error.messages })
     })
     return () => {
@@ -115,6 +118,8 @@ export function SecretDetail({ path, onGone }: { path: string; onGone: () => voi
           <span>{who === null ? 'This token' : displayName(who)} can't read this value.</span>
         </div>
       )}
+
+      {detail.state === 'fault' && <ServerFault onRetry={() => setReads((n) => n + 1)} />}
 
       {detail.state === 'error' && (
         <p className="alert" role="alert">

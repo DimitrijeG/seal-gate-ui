@@ -15,6 +15,12 @@ export default defineConfig({
     baseURL: `http://localhost:${consolePort}`,
     trace: 'retain-on-failure',
   },
+  expect: {
+    // Text antialiasing differs by a few dozen pixels between runs on the
+    // same machine. A handful is noise; any real change to a baseline moves
+    // far more than this, since it shifts whole words or boxes.
+    toHaveScreenshot: { maxDiffPixels: 120 },
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: `npm run dev -- --port ${consolePort} --strictPort`,

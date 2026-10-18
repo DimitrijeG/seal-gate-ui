@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
+import { CheckIcon, CopyIcon } from '../app/icons'
+
+interface CopyButtonProps {
+  value: string
+  label: string
+  className: string
+  // Icon only, for the design's square Copy button beside an ID.
+  icon?: boolean
+}
 
 // Copies a value to the clipboard and says so for two seconds.
-export function CopyButton({ value, label, className }: { value: string; label: string; className: string }) {
+export function CopyButton({ value, label, className, icon = false }: CopyButtonProps) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -22,7 +31,7 @@ export function CopyButton({ value, label, className }: { value: string; label: 
 
   return (
     <button type="button" className={className} aria-label={label} onClick={() => void copy()}>
-      {copied ? 'Copied' : 'Copy'}
+      {icon ? copied ? <CheckIcon size={15} /> : <CopyIcon size={15} /> : copied ? 'Copied' : 'Copy'}
     </button>
   )
 }

@@ -61,3 +61,10 @@ export async function call<T>(
   }
   return { ok: true, data: result.data as T }
 }
+
+// A 500 and anything above it: the server broke, and its own words are
+// "internal error", which tells the operator nothing they can act on. The
+// console shows Errors.dc's own sentence and a Retry instead (ui/ServerFault).
+export function isServerFault(error: ApiError): boolean {
+  return error.kind === 'http' && error.status >= 500
+}

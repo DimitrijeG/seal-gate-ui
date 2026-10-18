@@ -3,12 +3,18 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { can, canAnythingUnder, capabilities, offers } from '../../api/capabilities/capabilities'
 import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
-import { call, messageText } from '../../api/result'
+import { call, isServerFault, messageText } from '../../api/result'
 import { useStore } from '../../lib/store'
+import { ServerFault } from '../../ui/ServerFault'
 import { PolicyEditor } from './PolicyEditor'
 import './PoliciesPage.css'
 
-type Names = { state: 'none' } | { state: 'ok'; names: string[] } | { state: 'error'; messages: string[] }
+type Names =
+  | { state: 'none' }
+  | { state: 'ok'; names: string[] }
+  // The server broke; Errors.dc shows its own sentence and a Retry.
+  | { state: 'fault' }
+  | { state: 'error'; messages: string[] }
 
 export function PoliciesPage() {
   const name = useParams().name ?? null
@@ -32,6 +38,7 @@ export function PoliciesPage() {
     void call(api.GET('/policies')).then((res) => {
       if (!current) return
       if (res.ok) setNames({ state: 'ok', names: res.data.names })
+      else if (isServerFault(res.error)) setNames({ state: 'fault' })
       else if (res.error.kind === 'http') setNames({ state: 'error', messages: res.error.messages })
     })
     return () => {
@@ -80,6 +87,8 @@ export function PoliciesPage() {
           </div>
           {canList === 'no' ? (
             <p className="muted policies-list__message">This token may not list policies.</p>
+          ) : names.state === 'fault' ? (
+            <ServerFault className="policies-list__message" onRetry={reload} />
           ) : names.state === 'error' ? (
             <p className="alert policies-list__message" role="alert">
               {messageText(names.messages)}

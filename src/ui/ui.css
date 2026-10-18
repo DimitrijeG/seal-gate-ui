@@ -280,3 +280,30 @@ p.muted {
   background: var(--cyan-50);
   color: var(--cyan-800);
 }
+
+/* A square button carrying only an icon */
+
+.button--icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Errors.dc's 500: the server broke, and Retry is the only move */
+
+.server-fault {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn-ink-strong);
+  font-size: 14px;
+}
+
+.server-fault button {
+  margin-left: auto;
+}

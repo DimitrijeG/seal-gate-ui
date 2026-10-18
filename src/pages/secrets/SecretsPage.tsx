@@ -4,8 +4,9 @@ import { can, canAnythingUnder, capabilities, offers } from '../../api/capabilit
 import { listablePrefixes } from '../../api/capabilities/evaluate'
 import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
-import { call, messageText } from '../../api/result'
+import { call, isServerFault, messageText } from '../../api/result'
 import { useStore } from '../../lib/store'
+import { ServerFault } from '../../ui/ServerFault'
 import { NewSecret } from './NewSecret'
 import { baseName, folderView, parseLocation } from './paths'
 import { SecretDetail } from './SecretDetail'
@@ -19,6 +20,8 @@ const PAGE = 10
 type Listing =
   | { state: 'none' }
   | { state: 'ok'; prefix: string; paths: string[] }
+  // The server broke; Errors.dc shows its own sentence and a Retry.
+  | { state: 'fault'; prefix: string }
   | { state: 'error'; prefix: string; messages: string[] }
 
 export function SecretsPage() {
@@ -46,6 +49,7 @@ export function SecretsPage() {
     void call(api.GET('/secrets', { params: { query: prefix === '' ? {} : { prefix } } })).then((res) => {
       if (!current) return
       if (res.ok) setListing({ state: 'ok', prefix, paths: res.data.paths })
+      else if (isServerFault(res.error)) setListing({ state: 'fault', prefix })
       else if (res.error.kind === 'http') setListing({ state: 'error', prefix, messages: res.error.messages })
     })
     return () => {
@@ -55,6 +59,7 @@ export function SecretsPage() {
 
   const paths = listing.state === 'ok' && listing.prefix === prefix ? listing.paths : null
   const listError = listing.state === 'error' && listing.prefix === prefix ? listing.messages : null
+  const listFault = listing.state === 'fault' && listing.prefix === prefix
   const openNew = () => setSearch({ new: '' })
   const closeNew = () => setSearch({})
 
@@ -83,6 +88,8 @@ export function SecretsPage() {
         <section className="secrets-browse" aria-label="Browse secrets">
           {caps.state === 'none' || caps.state === 'loading' ? null : !canListHere ? (
             <StartPoints rules={caps.state === 'rules' ? caps.rules : []} />
+          ) : listFault ? (
+            <ServerFault className="secrets-browse__message" onRetry={reload} />
           ) : listError !== null ? (
             <p className="alert secrets-browse__message" role="alert">
               {messageText(listError)}

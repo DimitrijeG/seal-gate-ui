@@ -4,9 +4,10 @@ import { can, capabilities, forgetCapabilities, offers } from '../../api/capabil
 import type { Rule } from '../../api/capabilities/evaluate'
 import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
-import { call, messageText } from '../../api/result'
+import { call, isServerFault, messageText } from '../../api/result'
 import { displayName, identity } from '../../api/session'
 import { useStore } from '../../lib/store'
+import { ServerFault } from '../../ui/ServerFault'
 import { COLUMNS, cellChanged, countChanges, nameProblem, ruleProblem, toggle } from './rules'
 
 type Loaded =
@@ -14,6 +15,7 @@ type Loaded =
   | { state: 'ok'; rules: Rule[] }
   | { state: 'gone' }
   | { state: 'forbidden' }
+  | { state: 'fault' }
   | { state: 'error'; messages: string[] }
 
 interface PolicyEditorProps {
@@ -39,6 +41,8 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
   const [busy, setBusy] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
+  // Bumped by Errors.dc's Retry, to read the policy again after a 500.
+  const [reads, setReads] = useState(0)
 
   useEffect(() => {
     if (name === null) return
@@ -51,12 +55,13 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
       } else if (res.error.kind !== 'http') return
       else if (res.error.status === 404) setLoaded({ state: 'gone' })
       else if (res.error.status === 403) setLoaded({ state: 'forbidden' })
+      else if (isServerFault(res.error)) setLoaded({ state: 'fault' })
       else setLoaded({ state: 'error', messages: res.error.messages })
     })
     return () => {
       current = false
     }
-  }, [name])
+  }, [name, reads])
 
   const target = name ?? newName
   const saved = loaded.state === 'ok' ? loaded.rules : []
@@ -137,6 +142,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
           {loaded.state === 'forbidden' && (
             <p className="denied">{who === null ? 'This token' : displayName(who)} can't read this policy.</p>
           )}
+          {loaded.state === 'fault' && <ServerFault onRetry={() => setReads((n) => n + 1)} />}
           {loaded.state === 'error' && (
             <p className="alert" role="alert">
               {messageText(loaded.messages)}
