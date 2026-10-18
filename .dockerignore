@@ -1,0 +1,8 @@
+.*
+**/.env
+node_modules/
+dist/
+design/
+test-results/
+playwright-report/
+blob-report/
