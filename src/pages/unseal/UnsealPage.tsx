@@ -36,7 +36,7 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
   const [share, setShare] = useState('')
   const [sending, setSending] = useState(false)
   // The last outcome worth saying in place; cleared by the next action.
-  const [outcome, setOutcome] = useState<'failed' | 'not-needed' | null>(null)
+  const [outcome, setOutcome] = useState<'failed' | 'not-needed' | 'duplicate' | null>(null)
   const [errors, setErrors] = useState<string[]>([])
 
   const progress = unsealProgress(status)
@@ -58,8 +58,12 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
       // them all.
       setOutcome('failed')
     } else if (res.error.status === 409) {
-      // Other key holders met the threshold first.
-      setOutcome('not-needed')
+      // Either other key holders met the threshold first, or this share is
+      // already buffered; the status after the refusal says which.
+      await refreshStatus()
+      const now = server.get()
+      setOutcome(now.state === 'up' && !now.status.sealed ? 'not-needed' : 'duplicate')
+      return
     } else {
       setErrors(res.error.messages)
     }
@@ -120,6 +124,9 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
           </span>
         </div>
         <ProgressBar filled={progress.filled} threshold={progress.threshold} unsealed={progress.unsealed} label={progress.text} />
+        {!progress.unsealed && status.progress > 0 && (
+          <span className="field__hint">Buffered shares are discarded ten minutes after the last one.</span>
+        )}
       </div>
 
       {outcome === 'failed' && (
@@ -130,6 +137,11 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
       {outcome === 'not-needed' && (
         <p className="notice notice--done" role="status">
           Already unsealed. Your share was not needed.
+        </p>
+      )}
+      {outcome === 'duplicate' && (
+        <p className="alert unseal__alert" role="alert">
+          That share was already submitted, so it was not counted again. The next one must come from another key holder.
         </p>
       )}
       {errors.length > 0 && (

@@ -14,8 +14,9 @@ Kind and Expiry columns, Rotate only on generated secrets.
   from the design's parts: the New secret form, the Secrets scope select,
   the session menu (signed-in identity, Rotate token, Revoke token,
   Sign out), the New entity and New group panels, the inline rename field
-  behind Rename, the inline Change password field, and the inline confirms
-  before a delete. Add them to `design/`.
+  behind Rename, the inline Change password field, the inline confirms
+  before a delete, and on Unseal the duplicate-share alert and the line
+  under the progress saying buffered shares expire. Add them to `design/`.
 - Identity's group picker lists names only. The design's "brings dev-read,
   dev-write" line under each pickable group needed a read per group and was
   dropped; update the design to match. The dashed pills on an entity still

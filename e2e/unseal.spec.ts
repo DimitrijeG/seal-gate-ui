@@ -50,12 +50,29 @@ test('a share is sent once, masked in the trace, and can be discarded', async ({
   await expect(page.getByRole('complementary', { name: 'API trace' })).toContainText('→ {"reset":true}')
 })
 
+test('a share submitted twice is refused and the buffer kept', async ({ page }) => {
+  await page.goto('/unseal')
+  await submitShare(page, shares[0]!)
+  await expect(page.getByText('Buffered shares are discarded ten minutes after the last one.')).toBeVisible()
+  await submitShare(page, shares[0]!)
+
+  await expect(page.getByRole('alert')).toHaveText(
+    'That share was already submitted, so it was not counted again. The next one must come from another key holder.',
+  )
+  await expect(page.getByText('1 of 2 shares submitted', { exact: true })).toBeVisible()
+  await discard(page).click()
+  await expect(page.getByText('0 of 2 shares submitted', { exact: true })).toBeVisible()
+})
+
 test('shares that do not combine are discarded with a warning', async ({ page }) => {
   await page.goto('/unseal')
-  // The same share twice reaches the threshold but cannot rebuild the key.
+  // A real share with its last byte changed reaches the threshold but
+  // rebuilds the wrong key.
+  const bytes = Buffer.from(shares[1]!, 'base64')
+  bytes[bytes.length - 1]! ^= 0xff
   await submitShare(page, shares[0]!)
   await expect(page.getByText('1 of 2 shares submitted', { exact: true })).toBeVisible()
-  await submitShare(page, shares[0]!)
+  await submitShare(page, bytes.toString('base64'))
 
   await expect(page.getByRole('alert')).toHaveText(
     'The shares did not combine into the key, so the server discarded them. Start again with correct shares.',
