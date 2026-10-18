@@ -22,6 +22,8 @@ audit:
       path: audit.log
       required: true
       timeout: 1s
+      # A throwaway log; an fsync per record would only slow the run.
+      sync: false
 lifecycle:
   interval: 1m
 token:
