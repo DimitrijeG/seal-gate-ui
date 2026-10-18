@@ -10,8 +10,7 @@ const ids: Record<string, string> = {}
 // The token test 7 issues, which test 8 expects deleting the entity to revoke.
 let issued = ''
 
-// Lets an entity read itself, its groups and its policies, so the console can
-// work out what it may do.
+// Lets an entity read itself, its groups and its policies.
 const knowSelf = [
   { path: 'system/entities/*', capabilities: ['read'] },
   { path: 'system/groups/*', capabilities: ['read'] },
@@ -341,9 +340,8 @@ test('a token with narrow rules is offered only the sections it may use', async 
   await signIn(page, await tokenFor(request, scoped), '/identity')
 
   // Nothing it holds touches system/users, so Usernames is not offered.
-  // Entities is: reading its own entity is how it learns its own rules,
-  // which is `read` on system/entities/*. It carries no count, because it
-  // may read an entity without listing them.
+  // Entities is, through know-self's `read` on system/entities/*. It
+  // carries no count, because it may read an entity without listing them.
   await expect(page).toHaveURL('/identity/entities')
   await expect(tabs(page)).toHaveText(['Entities', 'Groups2'])
   await expect(page.getByText('This token may not list entities.')).toBeVisible()

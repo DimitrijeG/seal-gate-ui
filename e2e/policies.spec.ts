@@ -42,10 +42,10 @@ test.beforeAll(async ({ request }) => {
   rootToken = init.root_token
   root = { Authorization: `Bearer ${rootToken}` }
   await putPolicy(request, 'dev-read', devRead)
-  await putPolicy(request, 'legacy', [{ path: 'secrets/legacy/*', capabilities: ['read', 'manage'] }])
+  await putPolicy(request, 'legacy', [{ path: 'secrets/legacy/*', capabilities: ['read'] }])
 })
 
-test('the list shows names, and a policy opens as a grid without manage', async ({ page }) => {
+test('the list shows names, and a policy opens as a grid', async ({ page }) => {
   await signIn(page, rootToken, '/policies')
   await expect(names(page)).toHaveText(['dev-read', 'legacy'])
   await expect(page.getByPlaceholder('Find among 2')).toBeVisible()
@@ -100,17 +100,6 @@ test('leaving with unsaved changes asks first', async ({ page }) => {
   await expect(page.getByText('1 unsaved change, ringed in the table')).toBeVisible()
 })
 
-test('a rule holding manage keeps it through an edit', async ({ page, request }) => {
-  await signIn(page, rootToken, '/policies/legacy')
-  await page.getByRole('button', { name: 'JSON' }).click()
-  await expect(page.getByLabel('JSON of legacy')).toContainText('"manage"')
-  await page.getByRole('button', { name: 'Rules' }).click()
-  await square(page, 1, 'list').click()
-  await page.getByRole('button', { name: 'Save policy' }).click()
-  await expect(page.getByText('All changes saved')).toBeVisible()
-  expect((await rulesOf(request, 'legacy'))[0]?.capabilities.sort()).toEqual(['list', 'manage', 'read'])
-})
-
 test('a new policy is named, given rules, and created', async ({ page }) => {
   await signIn(page, rootToken, '/policies')
   await page.getByRole('link', { name: 'New' }).click()
@@ -150,7 +139,6 @@ test('a policy deleted after the list loaded says so', async ({ page, request })
 
 test('a token that may only read policies sees them, and cannot change them', async ({ page, request }) => {
   await putPolicy(request, 'policy-reader', [
-    { path: 'system/entities/*', capabilities: ['read'] },
     { path: 'system/policies', capabilities: ['list'] },
     { path: 'system/policies/*', capabilities: ['read'] },
   ])

@@ -1,5 +1,8 @@
 import type { components } from '../schema'
 
+// The server reports the rules and is the authority on them; matching them
+// here only decides what the console offers, never what is allowed.
+
 export type Rule = components['schemas']['Rule']
 export type Capability = Rule['capabilities'][number]
 

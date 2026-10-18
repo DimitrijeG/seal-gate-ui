@@ -1,8 +1,6 @@
 import type { Capability, Rule } from '../../api/capabilities/evaluate'
 
-// The grid's columns. `manage` is left out: seal-gate never checks it, so a
-// square for it would grant nothing. A rule that holds it keeps it (the JSON
-// view shows it, and saving sends it back unchanged).
+// The grid's columns, one per capability, in the design's order.
 export const COLUMNS: Capability[] = ['create', 'read', 'update', 'delete', 'list', 'rotate', 'deny']
 
 const MAX_NAME = 128

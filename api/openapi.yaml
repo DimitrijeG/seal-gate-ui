@@ -90,8 +90,10 @@ paths:
       description: >
         Open by design: a sealed instance cannot check a token. Shares are
         buffered until the threshold is reached, then combined; a failed
-        combination discards the buffer. A reset discards it on request, so
-        a partial unseal can start over.
+        combination discards the buffer. A share already buffered is refused
+        with 409 and the buffer kept. A reset discards it on request, so a
+        partial unseal can start over; ten minutes with no accepted share
+        discard it too.
       security: []
       requestBody:
         required: true
@@ -185,8 +187,9 @@ paths:
       summary: List the paths of stored secrets, optionally under a prefix.
       description: >
         Returns every path under the prefix, at any depth, never the values.
-        A secret written by `PUT` whose TTL has passed is left out.
-        Needs `list` on `secrets/<prefix>`.
+        A secret written by `PUT` whose TTL has passed is left out, as is a
+        path the caller is not granted `list` on, such as one a `deny` rule
+        matches. Needs `list` on `secrets/<prefix>`.
       parameters:
         - name: prefix
           in: query
@@ -830,6 +833,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TokenSelfResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/Sealed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/token/self/rules:
+    get:
+      operationId: lookupSelfRules
+      tags: [auth]
+      summary: Report the rules the presented token is checked against.
+      description: >
+        Needs no capability: a token's own grants are its holder's to see. The
+        root token is reported as `{"root": true}` alone, since it passes every
+        check without rules. Any other token gets the rules of every policy it
+        holds, directly or through a group, as stored: in policy order, not
+        merged, so a `deny` beside a grant on the same path is kept. A policy
+        that no longer exists contributes no rules; one that cannot be read
+        fails the request rather than answer with fewer rules.
+      responses:
+        "200":
+          description: The presented token's rules.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenRulesResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "503":
@@ -1533,7 +1563,7 @@ components:
           minItems: 1
           items:
             type: string
-            enum: [create, read, update, delete, list, rotate, manage, deny]
+            enum: [create, read, update, delete, list, rotate, deny]
       additionalProperties: false
 
     ID:
@@ -1643,6 +1673,28 @@ components:
               const: true
           maxProperties: 1
         - required: [entity_id, expires_at]
+          not:
+            required: [root]
+
+    TokenRulesResponse:
+      type: object
+      description: Either `root` alone, or the rules.
+      properties:
+        root:
+          type: boolean
+        rules:
+          type: array
+          description: Empty for a token holding no rules, never null.
+          items:
+            $ref: "#/components/schemas/Rule"
+      additionalProperties: false
+      oneOf:
+        - required: [root]
+          properties:
+            root:
+              const: true
+          maxProperties: 1
+        - required: [rules]
           not:
             required: [root]
 

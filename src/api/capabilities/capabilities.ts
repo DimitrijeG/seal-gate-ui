@@ -4,10 +4,10 @@ import { call } from '../result'
 import { identity, token } from '../session'
 import { type Capability, type Rule, allows, allowsAnythingUnder } from './evaluate'
 
-// What the console knows about what the session's token may do. No API says,
-// so for an entity it reads the entity, its groups and their policies and
-// evaluates the rules as the server would. If any of those reads is refused,
-// it does not know, and offers actions and lets the server decide.
+// What the console knows about what the session's token may do: the rules the
+// server reports for it, evaluated here only to decide what to offer. If the
+// server could not report them, it does not know, and offers actions and lets
+// the server decide.
 export type Capabilities =
   | { state: 'none' }
   | { state: 'loading' }
@@ -16,7 +16,7 @@ export type Capabilities =
   | { state: 'unknown' }
 
 // `pending` while the rules are still being read; `unknown` once reading
-// them was refused.
+// them failed.
 export type Answer = 'yes' | 'no' | 'unknown' | 'pending'
 
 export const capabilities = createStore<Capabilities>({ state: 'none' })
@@ -29,8 +29,8 @@ let generation = 0
 token.subscribe(forgetCapabilities)
 
 // A refusal while the rules were known means they changed (someone edited a
-// policy or a group): read them again. Not while unknown or loading, where a
-// refusal is expected and reading again would only be refused again.
+// policy or a group): read them again. Not while unknown, where the server
+// decides anyway, or loading, where the new rules are on their way.
 refusals.subscribe(() => {
   if (capabilities.get().state === 'rules') forgetCapabilities()
 })
@@ -52,33 +52,17 @@ export async function loadCapabilities(): Promise<void> {
   const run = ++generation
   const asked = token.get()
   capabilities.set({ state: 'loading' })
-  const result = await readRules(who.entityId)
-  if (run === generation && token.get() === asked) {
-    capabilities.set(result === null ? { state: 'unknown' } : { state: 'rules', rules: result })
-  }
+  const result = await readRules()
+  if (run === generation && token.get() === asked) capabilities.set(result)
 }
 
-// The rules of every policy the entity holds, directly or through a group;
-// null as soon as one read is refused or fails. A deleted group and a missing
-// policy grant nothing, as on the server, so they are skipped.
-async function readRules(entityId: string): Promise<Rule[] | null> {
-  const entity = await call(api.GET('/entities/{id}', { params: { path: { id: entityId } } }))
-  if (!entity.ok) return null
-
-  const names = new Set(entity.data.policies)
-  for (const id of entity.data.groups) {
-    const group = await call(api.GET('/groups/{id}', { params: { path: { id } } }))
-    if (group.ok) group.data.policies.forEach((name) => names.add(name))
-    else if (!(group.error.kind === 'http' && group.error.status === 404)) return null
-  }
-
-  const rules: Rule[] = []
-  for (const name of names) {
-    const policy = await call(api.GET('/policies/{name}', { params: { path: { name } } }))
-    if (policy.ok) rules.push(...policy.data.rules)
-    else if (!(policy.error.kind === 'http' && policy.error.status === 404)) return null
-  }
-  return rules
+// The rules the server checks the token against, its own policies' and its
+// groups'. Asking needs nothing beyond the token, so only a fault fails it.
+async function readRules(): Promise<Capabilities> {
+  const res = await call(api.GET('/auth/token/self/rules'))
+  if (!res.ok) return { state: 'unknown' }
+  if (res.data.root === true) return { state: 'root' }
+  return res.data.rules === undefined ? { state: 'unknown' } : { state: 'rules', rules: res.data.rules }
 }
 
 export function can(caps: Capabilities, capability: Capability, resource: string): Answer {
