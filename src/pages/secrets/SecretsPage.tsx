@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
-import { can, canAnythingUnder, capabilities, offers } from '../../api/capabilities/capabilities'
-import { listablePrefixes } from '../../api/capabilities/evaluate'
+import { type Capabilities, can, canAnythingUnder, capabilities, offers } from '../../api/capabilities/capabilities'
+import { listablePrefixes, readablePaths } from '../../api/capabilities/evaluate'
 import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
 import { call, isServerFault, messageText } from '../../api/result'
@@ -15,14 +15,34 @@ import './SecretsPage.css'
 // Secrets per page; a folder's subfolders are always all shown.
 const PAGE = 10
 
-// The last answer to a list request, and the prefix it was for: one for
-// another prefix counts as still loading.
+// Where the paths come from: the prefixes to list, and single paths to add
+// that no listing can reach.
+interface Sources {
+  starts: string[]
+  known: string[]
+}
+
+// Every path in one request when the token may list them all, or the server
+// must decide; otherwise each folder its rules let it list, merged with the
+// single secrets they let it read. Either way folders, counts and search work
+// from the top. Null while the rules are still being read.
+function sources(caps: Capabilities): Sources | null {
+  const area = resources.secretList()
+  const all = can(caps, 'list', area)
+  if (all === 'pending') return null
+  if (all !== 'no' || caps.state !== 'rules') return { starts: [''], known: [] }
+  const strip = (p: string) => p.slice(area.length)
+  return { starts: listablePrefixes(caps.rules, area).map(strip), known: readablePaths(caps.rules, area).map(strip) }
+}
+
+// The last answer to the list requests, and the sources it was for: one for
+// other sources counts as still loading.
 type Listing =
   | { state: 'none' }
-  | { state: 'ok'; prefix: string; paths: string[] }
+  | { state: 'ok'; from: Sources; paths: string[] }
   // The server broke; Errors.dc shows its own sentence and a Retry.
-  | { state: 'fault'; prefix: string }
-  | { state: 'error'; prefix: string; messages: string[] }
+  | { state: 'fault'; from: Sources }
+  | { state: 'error'; from: Sources; messages: string[] }
 
 export function SecretsPage() {
   const rest = useParams()['*'] ?? ''
@@ -32,11 +52,8 @@ export function SecretsPage() {
   const navigate = useNavigate()
   const caps = useStore(capabilities)
 
-  // One request for every path when the token may list them all, so folders,
-  // counts and search work from it; otherwise one per folder it may list.
-  const listAll = can(caps, 'list', resources.secretList())
-  const prefix = listAll === 'no' ? folder : ''
-  const canListHere = offers(can(caps, 'list', resources.secretList(prefix)))
+  const from = useMemo(() => sources(caps), [caps])
+  const limited = caps.state === 'rules' && can(caps, 'list', resources.secretList()) === 'no'
   const canCreate = offers(canAnythingUnder(caps, 'secrets/', 'create'))
 
   const [listing, setListing] = useState<Listing>({ state: 'none' })
@@ -44,22 +61,35 @@ export function SecretsPage() {
   const reload = useCallback(() => setReloads((n) => n + 1), [])
 
   useEffect(() => {
-    if (listAll === 'pending' || !canListHere) return
+    if (from === null || from.starts.length === 0) return
     let current = true
-    void call(api.GET('/secrets', { params: { query: prefix === '' ? {} : { prefix } } })).then((res) => {
+    const requests = from.starts.map((prefix) => call(api.GET('/secrets', { params: { query: prefix === '' ? {} : { prefix } } })))
+    void Promise.all(requests).then((results) => {
       if (!current) return
-      if (res.ok) setListing({ state: 'ok', prefix, paths: res.data.paths })
-      else if (isServerFault(res.error)) setListing({ state: 'fault', prefix })
-      else if (res.error.kind === 'http') setListing({ state: 'error', prefix, messages: res.error.messages })
+      const found = new Set(from.known)
+      for (const res of results) {
+        if (res.ok) {
+          res.data.paths.forEach((p) => found.add(p))
+          continue
+        }
+        if (isServerFault(res.error)) setListing({ state: 'fault', from })
+        else if (res.error.kind === 'http') setListing({ state: 'error', from, messages: res.error.messages })
+        return
+      }
+      setListing({ state: 'ok', from, paths: [...found].sort() })
     })
     return () => {
       current = false
     }
-  }, [prefix, listAll, canListHere, reloads])
+  }, [from, reloads])
 
-  const paths = listing.state === 'ok' && listing.prefix === prefix ? listing.paths : null
-  const listError = listing.state === 'error' && listing.prefix === prefix ? listing.messages : null
-  const listFault = listing.state === 'fault' && listing.prefix === prefix
+  // With nothing to list, the single secrets are the whole answer.
+  const answered = listing.state !== 'none' && listing.from === from
+  const paths =
+    from !== null && from.starts.length === 0 ? from.known : answered && listing.state === 'ok' ? listing.paths : null
+  const listError = answered && listing.state === 'error' ? listing.messages : null
+  const listFault = answered && listing.state === 'fault'
+  const nothing = from !== null && from.starts.length === 0 && from.known.length === 0
   const openNew = () => setSearch({ new: '' })
   const closeNew = () => setSearch({})
 
@@ -69,7 +99,7 @@ export function SecretsPage() {
         <div className="page-head">
           <h1>Secrets</h1>
           <p>
-            {paths !== null && `${paths.length} ${paths.length === 1 ? 'secret' : 'secrets'}${prefix ? ` in ${prefix}` : ''}. `}
+            {paths !== null && !nothing && `${paths.length} ${paths.length === 1 ? 'secret' : 'secrets'}${limited ? ' this token may see' : ''}. `}
             Values are encrypted with the master key before they reach storage.
           </p>
         </div>
@@ -86,8 +116,8 @@ export function SecretsPage() {
 
       <div className="secrets-body">
         <section className="secrets-browse" aria-label="Browse secrets">
-          {caps.state === 'none' || caps.state === 'loading' ? null : !canListHere ? (
-            <StartPoints rules={caps.state === 'rules' ? caps.rules : []} />
+          {from === null ? null : nothing ? (
+            <p className="muted secrets-browse__message">This token may not list or read any secrets.</p>
           ) : listFault ? (
             <ServerFault className="secrets-browse__message" onRetry={reload} />
           ) : listError !== null ? (
@@ -95,7 +125,7 @@ export function SecretsPage() {
               {messageText(listError)}
             </p>
           ) : (
-            <Browser paths={paths} folder={folder} selected={selected} canSearchAll={listAll !== 'no'} />
+            <Browser paths={paths} folder={folder} selected={selected} />
           )}
         </section>
 
@@ -132,10 +162,9 @@ interface BrowserProps {
   paths: string[] | null
   folder: string
   selected: string | null
-  canSearchAll: boolean
 }
 
-function Browser({ paths, folder, selected, canSearchAll }: BrowserProps) {
+function Browser({ paths, folder, selected }: BrowserProps) {
   const [filter, setFilter] = useState('')
   const [scope, setScope] = useState<'folder' | 'all'>('folder')
   const [page, setPage] = useState(0)
@@ -178,17 +207,13 @@ function Browser({ paths, folder, selected, canSearchAll }: BrowserProps) {
             </label>
             <input id="filter" type="search" placeholder="Filter by name" value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
-          {canSearchAll && (
-            <>
-              <label htmlFor="scope" className="visually-hidden">
-                Search in
-              </label>
-              <select id="scope" className="secrets-scope" value={scope} onChange={(e) => setScope(e.target.value as 'folder' | 'all')}>
-                <option value="folder">In {folder === '' ? 'the top level' : folder}</option>
-                <option value="all">In all paths</option>
-              </select>
-            </>
-          )}
+          <label htmlFor="scope" className="visually-hidden">
+            Search in
+          </label>
+          <select id="scope" className="secrets-scope" value={scope} onChange={(e) => setScope(e.target.value as 'folder' | 'all')}>
+            <option value="folder">In {folder === '' ? 'the top level' : folder}</option>
+            <option value="all">In all paths</option>
+          </select>
         </div>
       </div>
 
@@ -268,35 +293,6 @@ function Breadcrumb({ folder }: { folder: string }) {
         })}
       </ol>
     </nav>
-  )
-}
-
-// For a token that may not list every secret: the folders its rules let it
-// list, as places to start.
-function StartPoints({ rules }: { rules: Parameters<typeof listablePrefixes>[0] }) {
-  const starts = listablePrefixes(rules, 'secrets/').map((p) => p.slice('secrets/'.length))
-  return (
-    <div className="secrets-browse__message">
-      {starts.length === 0 ? (
-        <p className="muted">This token may not list any secrets.</p>
-      ) : (
-        <>
-          <p className="muted">This token may not list every secret. It may list these folders:</p>
-          <ul className="secrets-list" aria-label="Contents">
-            {starts.map((s) => (
-              <li key={s}>
-                <Link className="secrets-row" to={`/secrets/${s}`}>
-                  <span className="secrets-row__name">
-                    <FolderIcon />
-                    <span className="secrets-row__folder">{s}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
   )
 }
 

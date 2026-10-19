@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Rule, allows, allowsAnythingUnder, listablePrefixes, matches } from './evaluate'
+import { type Rule, allows, allowsAnythingUnder, listablePrefixes, matches, readablePaths } from './evaluate'
 
 describe('listablePrefixes', () => {
   it('finds the folders a token may list', () => {
@@ -23,6 +23,36 @@ describe('listablePrefixes', () => {
       { path: 'secrets/dev/*', capabilities: ['deny'] },
     ]
     expect(listablePrefixes(rules, 'secrets/')).toEqual([])
+  })
+
+  it('leaves out a prefix inside another', () => {
+    const rules: Rule[] = [
+      { path: 'secrets/dev/*', capabilities: ['list'] },
+      { path: 'secrets/dev/api/*', capabilities: ['list'] },
+    ]
+    expect(listablePrefixes(rules, 'secrets/')).toEqual(['secrets/dev/'])
+  })
+})
+
+describe('readablePaths', () => {
+  it('finds single secrets the rules name and let the token read', () => {
+    const rules: Rule[] = [
+      { path: 'secrets/token', capabilities: ['read', 'list'] },
+      { path: 'secrets/ops/key', capabilities: ['read'] },
+      { path: 'secrets/dev/*', capabilities: ['read'] },
+      { path: 'secrets/db/', capabilities: ['read'] },
+      { path: 'system/seal', capabilities: ['read'] },
+    ]
+    expect(readablePaths(rules, 'secrets/')).toEqual(['secrets/ops/key', 'secrets/token'])
+  })
+
+  it('leaves out one it may not read', () => {
+    const rules: Rule[] = [
+      { path: 'secrets/token', capabilities: ['list'] },
+      { path: 'secrets/key', capabilities: ['read'] },
+      { path: 'secrets/*', capabilities: ['deny'] },
+    ]
+    expect(readablePaths(rules, 'secrets/')).toEqual([])
   })
 })
 
