@@ -18,18 +18,26 @@ describe('navItems', () => {
     expect(labels(fresh, true)).toEqual(['Initialize'])
   })
 
-  it('offers only Unseal while sealed or signed out', () => {
+  it('offers only Unseal while sealed', () => {
     expect(labels(sealed, true)).toEqual(['Unseal'])
-    expect(labels(unsealed, false)).toEqual(['Unseal'])
+    expect(labels(sealed, false)).toEqual(['Unseal'])
   })
 
-  it('offers the working screens once unsealed and signed in', () => {
-    expect(labels(unsealed, true)).toEqual(['Unseal', 'Secrets', 'Identity', 'Policies'])
+  it('offers nothing unsealed and signed out, where signing in is the only step', () => {
+    expect(labels(unsealed, false)).toEqual([])
+  })
+
+  it('offers the working screens once unsealed and signed in, without Unseal', () => {
+    expect(labels(unsealed, true)).toEqual(['Secrets', 'Identity', 'Policies'])
   })
 
   it('leaves out a working screen the token surely cannot use', () => {
     const items = navItems(unsealed, true, (to) => to !== '/policies').map((i) => i.label)
-    expect(items).toEqual(['Unseal', 'Secrets', 'Identity'])
+    expect(items).toEqual(['Secrets', 'Identity'])
+  })
+
+  it('always offers Secrets, the home screen', () => {
+    expect(navItems(unsealed, true, () => false).map((i) => i.label)).toEqual(['Secrets'])
   })
 })
 

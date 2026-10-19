@@ -169,6 +169,63 @@
   color: var(--unsealed-ink);
 }
 
+.status-pill--button {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow 120ms;
+}
+
+.status-pill--button:hover,
+.status-pill--button[aria-expanded='true'] {
+  box-shadow: 0 0 0 3px rgba(215, 245, 236, 0.35);
+}
+
+.status-pill--button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.seal-control {
+  position: relative;
+}
+
+.seal-control__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 10;
+  width: 300px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow:
+    0 10px 28px rgba(15, 27, 45, 0.14),
+    0 2px 6px rgba(15, 27, 45, 0.08);
+}
+
+.seal-control__title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.seal-control__text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.seal-control__seal {
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
 /* Whole-app banners */
 
 .banner {
