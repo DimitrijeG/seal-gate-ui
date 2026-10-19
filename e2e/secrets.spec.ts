@@ -162,7 +162,7 @@ test('a generated secret overwritten meanwhile is not rotated', async ({ page, r
   await expect(detail(page).getByText('Stored · 9 bytes')).toBeVisible()
 })
 
-test('a token limited to one folder starts there and sees only what it may do', async ({ page, request }) => {
+test('a token limited to some folders browses them from the top and sees only what it may do', async ({ page, request }) => {
   const policy = {
     rules: [
       { path: 'secrets/dev/*', capabilities: ['read', 'list'] },
@@ -181,9 +181,10 @@ test('a token limited to one folder starts there and sees only what it may do', 
     if (res.status() === 403) refused.push(res.url())
   })
 
+  // Both folders' listings merge into one tree; `top`, outside them, is not in it.
   await signIn(page, token)
-  await expect(page.getByText('This token may not list every secret. It may list these folders:')).toBeVisible()
-  await expect(rows(page)).toHaveText(['db/', 'dev/'])
+  await expect(page.getByText(/secrets this token may see\./)).toBeVisible()
+  await expect(rows(page)).toHaveText([/^db\//, /^dev\//])
   await expect(page.getByRole('button', { name: 'New secret' })).toHaveCount(0)
 
   await rows(page).filter({ hasText: 'dev/' }).getByRole('link').click()
@@ -195,4 +196,21 @@ test('a token limited to one folder starts there and sees only what it may do', 
   // Listing db/ is allowed, reading in it is not.
   await page.goto('/secrets/db/redis')
   await expect(page.getByText("dana can't read this value.")).toBeVisible()
+})
+
+test('a single secret a rule names is shown, though no listing reaches it', async ({ page, request }) => {
+  await request.put(`${gate.api}/policies/top-reader`, {
+    headers: root,
+    data: { rules: [{ path: 'secrets/top', capabilities: ['read'] }] },
+  })
+  const entity = await request.post(`${gate.api}/entities`, { headers: root, data: { alias: 'tom', policies: ['top-reader'] } })
+  const { id } = (await entity.json()) as { id: string }
+  const issued = await request.post(`${gate.api}/entities/${id}/tokens`, { headers: root, data: {} })
+  const { token } = (await issued.json()) as { token: string }
+
+  await signIn(page, token)
+  await expect(page.getByText('1 secret this token may see.')).toBeVisible()
+  await expect(rows(page)).toHaveText(['top'])
+  await rows(page).getByRole('link').click()
+  await expect(detail(page).getByText('Stored · 1 byte')).toBeVisible()
 })

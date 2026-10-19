@@ -48,8 +48,8 @@ export function allowsAnythingUnder(rules: Rule[], prefix: string, capability?: 
 
 // The prefixes under `area` (itself included) that the rules let the token
 // list, read from rules that grant `list`: `secrets/dev/*` gives
-// `secrets/dev/`. For a token that cannot list everything, these are where
-// browsing can start.
+// `secrets/dev/`. One inside another is left out, so listing each once and
+// merging covers everything a token that cannot list the whole area may list.
 export function listablePrefixes(rules: Rule[], area: string): string[] {
   const found = new Set<string>()
   for (const rule of rules) {
@@ -57,6 +57,20 @@ export function listablePrefixes(rules: Rule[], area: string): string[] {
     const stem = rule.path.endsWith('*') ? rule.path.slice(0, -1) : rule.path
     const prefix = stem.slice(0, stem.lastIndexOf('/') + 1)
     if (prefix.length >= area.length && allows(rules, prefix, 'list')) found.add(prefix)
+  }
+  return [...found].filter((p) => ![...found].some((q) => q !== p && p.startsWith(q))).sort()
+}
+
+// The single resources under `area` the rules name exactly and let the token
+// read: `secrets/token` gives itself. No folder listing can reach them, since
+// a listing starts only at a folder, so the token's own rules are where their
+// names come from.
+export function readablePaths(rules: Rule[], area: string): string[] {
+  const found = new Set<string>()
+  for (const rule of rules) {
+    const { path } = rule
+    if (path.endsWith('*') || path.endsWith('/') || !path.startsWith(area) || path === area) continue
+    if (allows(rules, path, 'read')) found.add(path)
   }
   return [...found].sort()
 }
