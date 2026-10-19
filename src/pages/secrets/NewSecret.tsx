@@ -6,6 +6,7 @@ import { api } from '../../api/client'
 import { call, messageText } from '../../api/result'
 import { encodeText } from '../../lib/base64'
 import { useStore } from '../../lib/store'
+import { Select } from '../../ui/Select'
 import { pathProblem } from './paths'
 
 // Bounds from the spec: a stored value decodes to at most 64 KiB; a generated
@@ -195,11 +196,17 @@ export function NewSecret({ folder, existing, onCancel, onCreated }: NewSecretPr
           <label htmlFor="s-unit" className="visually-hidden">
             Unit
           </label>
-          <select id="s-unit" className="secrets-scope" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
-            <option value="minutes">minutes</option>
-            <option value="hours">hours</option>
-            <option value="days">days</option>
-          </select>
+          <Select<Unit>
+            id="s-unit"
+            className="secrets-scope"
+            value={unit}
+            options={[
+              { value: 'minutes', label: 'minutes' },
+              { value: 'hours', label: 'hours' },
+              { value: 'days', label: 'days' },
+            ]}
+            onChange={setUnit}
+          />
         </div>
         <span id="s-ttl-hint" className={`field__hint${ttlOk ? '' : ' field__hint--error'}`}>
           {!ttlOk

@@ -38,11 +38,6 @@ export function rulePathProblem(pattern: string): string | null {
   return null
 }
 
-// Why a whole rule would be refused, or null.
-export function ruleProblem(rule: Rule): string | null {
-  return rulePathProblem(rule.path) ?? (rule.capabilities.length === 0 ? 'Tick at least one capability.' : null)
-}
-
 // Whether one square differs from what is saved, by row position.
 export function cellChanged(saved: Rule[], draft: Rule[], row: number, capability: Capability): boolean {
   const before = saved[row]?.capabilities.includes(capability) ?? false
@@ -67,11 +62,11 @@ export function countChanges(saved: Rule[], draft: Rule[]): number {
   return changes
 }
 
-// A rule with one capability turned on or off.
-export function toggle(rule: Rule, capability: Capability): Rule {
+// A rule, or a row of one, with one capability turned on or off.
+export function toggle<T extends { capabilities: Capability[] }>(rule: T, capability: Capability): T {
   const has = rule.capabilities.includes(capability)
   return {
-    path: rule.path,
+    ...rule,
     capabilities: has ? rule.capabilities.filter((c) => c !== capability) : [...rule.capabilities, capability],
   }
 }

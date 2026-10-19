@@ -6,6 +6,7 @@ import { resources } from '../../api/capabilities/resources'
 import { api } from '../../api/client'
 import { call, isServerFault, messageText } from '../../api/result'
 import { useStore } from '../../lib/store'
+import { Select } from '../../ui/Select'
 import { ServerFault } from '../../ui/ServerFault'
 import { NewSecret } from './NewSecret'
 import { baseName, folderView, parseLocation } from './paths'
@@ -210,10 +211,16 @@ function Browser({ paths, folder, selected }: BrowserProps) {
           <label htmlFor="scope" className="visually-hidden">
             Search in
           </label>
-          <select id="scope" className="secrets-scope" value={scope} onChange={(e) => setScope(e.target.value as 'folder' | 'all')}>
-            <option value="folder">In {folder === '' ? 'the top level' : folder}</option>
-            <option value="all">In all paths</option>
-          </select>
+          <Select<'folder' | 'all'>
+            id="scope"
+            className="secrets-scope"
+            value={scope}
+            options={[
+              { value: 'folder', label: `In ${folder === '' ? 'the top level' : folder}` },
+              { value: 'all', label: 'In all paths' },
+            ]}
+            onChange={setScope}
+          />
         </div>
       </div>
 

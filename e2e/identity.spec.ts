@@ -1,5 +1,6 @@
 import { type APIRequestContext, type Page, expect, test } from '@playwright/test'
 import { freshSealGate } from './seal-gate.ts'
+import { choose } from './select.ts'
 
 const gate = freshSealGate()
 let root: Record<string, string> = {}
@@ -315,7 +316,7 @@ test('a username row names its entity, and its password can be changed', async (
 test('a username is created, signs in, and can be removed', async ({ page, request }) => {
   await signIn(page, rootToken, '/identity/usernames')
   await page.getByRole('textbox', { name: 'Username' }).fill('ivana')
-  await page.getByLabel('Signs in as').selectOption({ label: 'alice' })
+  await choose(page.getByLabel('Signs in as'), 'alice')
   await page.getByLabel('Password', { exact: true }).fill('ivana-password')
   await page.getByRole('button', { name: 'Create username' }).click()
   await expect(page.getByText('ivana can sign in now.')).toBeVisible()

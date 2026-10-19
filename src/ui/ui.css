@@ -25,6 +25,118 @@ p.muted {
   margin: 0;
 }
 
+/* Dropdowns (ui/Select.tsx): a button and the list it opens. */
+.select {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font-family: inherit;
+  min-height: 40px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background-color: var(--card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b4a5e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 10l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.06);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 120ms,
+    box-shadow 120ms;
+}
+
+.select--icon {
+  padding-left: 12px;
+}
+
+.select--icon > svg {
+  flex: none;
+  color: var(--ink-soft);
+}
+
+.select:hover:not(:disabled) {
+  border-color: var(--cyan-300);
+}
+
+.select:focus-visible,
+.select[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--cyan-600);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.select:disabled {
+  background-color: var(--surface);
+  color: var(--ink-muted);
+  box-shadow: none;
+  cursor: default;
+  opacity: 1;
+}
+
+.select__value {
+  display: grid;
+}
+
+.select__value > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.select__ghost {
+  visibility: hidden;
+}
+
+.select__list {
+  position: fixed;
+  z-index: 50;
+  box-sizing: border-box;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow:
+    0 10px 28px rgba(15, 27, 45, 0.14),
+    0 2px 6px rgba(15, 27, 45, 0.08);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.select__option--active {
+  background: var(--cyan-50);
+}
+
+.select__option[aria-selected='true'] {
+  color: var(--cyan-800);
+  font-weight: 600;
+}
+
+.select__option > svg {
+  flex: none;
+  color: var(--cyan-600);
+}
+
 /* Fields */
 
 .field {

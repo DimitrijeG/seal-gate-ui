@@ -6,6 +6,7 @@ import { api } from '../../api/client'
 import { call, messageText } from '../../api/result'
 import { PersonIcon, SearchIcon, TrashIcon } from '../../app/icons'
 import { useStore } from '../../lib/store'
+import { Select } from '../../ui/Select'
 import { ServerFault } from '../../ui/ServerFault'
 import {
   type Summary,
@@ -370,22 +371,19 @@ function NewUsername({ entities, existing, onCreated }: NewUsernameProps) {
               onChange={(e) => setEntityId(e.target.value)}
             />
           ) : (
-            <div className="identity-new__select">
-              <PersonIcon />
-              <select
-                id="u-entity"
-                value={chosen}
-                disabled={busy || byName.length === 0}
-                onChange={(e) => setEntityId(e.target.value)}
-              >
-                {byName.length === 0 && <option value="">No entities yet</option>}
-                {byName.map((entity) => (
-                  <option key={entity.id} value={entity.id}>
-                    {nameOf(entity, 'entity')}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              id="u-entity"
+              className="identity-new__select"
+              icon={<PersonIcon />}
+              value={chosen}
+              disabled={busy || byName.length === 0}
+              options={
+                byName.length === 0
+                  ? [{ value: '', label: 'No entities yet' }]
+                  : byName.map((entity) => ({ value: entity.id, label: nameOf(entity, 'entity') }))
+              }
+              onChange={setEntityId}
+            />
           )}
           <span
             className={`field__hint${entityId !== '' && entityTrouble !== null ? ' field__hint--error' : ''}`}

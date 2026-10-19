@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Rule } from '../../api/capabilities/evaluate'
-import { COLUMNS, cellChanged, countChanges, nameProblem, ruleProblem, rulePathProblem, toggle } from './rules'
+import { COLUMNS, cellChanged, countChanges, nameProblem, rulePathProblem, toggle } from './rules'
 
 describe('COLUMNS', () => {
   it('has a column for every capability', () => {
@@ -37,13 +37,6 @@ describe('rulePathProblem', () => {
     expect(rulePathProblem('secrets//*')).toBe('Segments of A–Z a–z 0–9 . _ - separated by /.')
     expect(rulePathProblem('')).toBe('Enter a path.')
     expect(rulePathProblem('x'.repeat(258))).toBe('At most 257 bytes.')
-  })
-})
-
-describe('ruleProblem', () => {
-  it('needs a capability', () => {
-    expect(ruleProblem({ path: 'secrets/*', capabilities: [] })).toBe('Tick at least one capability.')
-    expect(ruleProblem({ path: 'secrets/*', capabilities: ['read'] })).toBeNull()
   })
 })
 

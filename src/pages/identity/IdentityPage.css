@@ -502,29 +502,9 @@ p.identity-list__message.alert {
 }
 
 .identity-new__select {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.identity-new__select svg {
-  position: absolute;
-  left: 12px;
-  color: var(--ink-soft);
-  pointer-events: none;
-}
-
-.identity-new__select select {
   width: 100%;
   min-height: 44px;
-  padding: 0 12px 0 36px;
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--ink);
   font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 /* Usernames */
