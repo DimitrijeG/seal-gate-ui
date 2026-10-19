@@ -26,7 +26,7 @@ seal-gate
 </a>
 <nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
 <a href="Init.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Initialize</a>
-<a href="Main.dc.html" aria-current="page" style="padding: 10px 14px; color: #FFFFFF; text-decoration: none; border-radius: 6px; background: #1C3D63; font-weight: 500">Unseal</a>
+<sc-if value="{{ sealed }}" hint-placeholder-val="{{ true }}"><a href="Main.dc.html" aria-current="page" style="padding: 10px 14px; color: #FFFFFF; text-decoration: none; border-radius: 6px; background: #1C3D63; font-weight: 500">Unseal</a></sc-if>
 <a href="Secrets.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Secrets</a>
 <a href="Identity.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Identity</a>
 <a href="Policies.dc.html" style="padding: 10px 14px; color: #C9D6E8; text-decoration: none; border-radius: 6px">Policies</a>
@@ -43,9 +43,20 @@ Sealed
 </div>
 </sc-if>
 <sc-if value="{{ unsealed }}" hint-placeholder-val="{{ false }}">
-<div role="status" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-weight: 600; font-size: 14px">
+<div style="position: relative">
+<div role="status"><button type="button" aria-expanded="{{ sealOpen }}" aria-controls="seal-panel" onClick="{{ toggleSeal }}" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 0; border-radius: 999px; background: #D7F5EC; color: #0B5D4B; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; {{ pillRing }}">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>
 Unsealed
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+</button></div>
+<sc-if value="{{ sealOpen }}" hint-placeholder-val="{{ true }}">
+<div id="seal-panel" role="group" aria-label="Seal" style="position: absolute; right: 0; top: calc(100% + 10px); z-index: 10; width: 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #D5DDE8; border-radius: 12px; background: #FFFFFF; color: #0F1B2D; box-shadow: 0 10px 28px rgba(15,27,45,0.14), 0 2px 6px rgba(15,27,45,0.08)">
+<span style="font-weight: 600; font-size: 15px">Unsealed</span>
+<span style="font-size: 13px; line-height: 1.45; color: #4A5568">The master key was rebuilt from {{ k }} of {{ n }} shares and is held in memory.</span>
+<span style="font-size: 13px; line-height: 1.45; color: #4A5568">Sealing discards it: secrets, policies and tokens are refused until {{ k }} key holders unseal again.</span>
+<button type="button" onClick="{{ seal }}" style="margin-top: 4px; align-self: flex-start; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #E2B4AE; background: #FFFFFF; color: #A1342A; font-size: 14px; cursor: pointer">Seal now</button>
+</div>
+</sc-if>
 </div>
 </sc-if>
 </div>
@@ -78,9 +89,9 @@ Unsealed
 </div>
 <div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 2px">
 <h2 id="state-h" style="margin: 0; font-size: 22px; font-weight: 600">Unsealed</h2>
-<p style="margin: 0; color: #4A5568">The key is rebuilt and in memory. Sealing discards it; the shares are needed again.</p>
+<p style="margin: 0; color: #4A5568">The key is rebuilt and in memory. To seal, open <strong>Unsealed</strong> at the top right; the shares are needed again after.</p>
 </div>
-<button type="button" onClick="{{ seal }}" style="min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid #0F2A47; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; cursor: pointer">Seal now</button>
+<a href="Secrets.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 8px; background: #0F2A47; color: #FFFFFF; font-size: 15px; font-weight: 500; text-decoration: none">Go to Secrets</a>
 </sc-if>
 </div>
 
@@ -155,6 +166,7 @@ class Component extends DCLogic {
     const progress = st.progress || 0;
     const share = st.share || '';
     const traceOn = st.traceOn === true;
+    const sealOpen = st.sealOpen === true;
     const status = (s, p) => JSON.stringify({ initialized: true, sealed: s, shares: n, threshold: k, progress: p });
     const ok = 'background: #0E4A5C; color: #C7F0FA';
     const bad = 'background: #5C2A0C; color: #FFD9B8';
@@ -174,7 +186,7 @@ class Component extends DCLogic {
     const reset = () => push({ method: 'POST', path: '/v1/sys/unseal', code: '200', codeStyle: ok, hasReq: true, req: '{"reset":true}', res: status(true, 0) },
       { progress: 0, failed: false });
     const seal = () => push({ method: 'POST', path: '/v1/sys/seal', code: '204', codeStyle: ok, hasReq: true, req: 'Authorization: Bearer ••••', res: '(no body)' },
-      { progress: 0, sealed: true, failed: false });
+      { progress: 0, sealed: true, failed: false, sealOpen: false });
 
     const shown = sealed ? progress : k;
     const segments = Array.from({ length: k }, (_, i) => ({
@@ -186,6 +198,9 @@ class Component extends DCLogic {
       segments, log, submit, reset, seal, traceOn,
       onShare: (ev) => this.setState({ share: ev.target.value }),
       toggleTrace: () => this.setState({ traceOn: !traceOn }),
+      sealOpen,
+      toggleSeal: () => this.setState({ sealOpen: !sealOpen }),
+      pillRing: sealOpen ? 'box-shadow: 0 0 0 3px rgba(215,245,236,0.35)' : '',
       traceBtnStyle: traceOn ? 'background: #0E7490; border: 1px solid #0E7490' : 'background: transparent; border: 1px solid #3A5A80',
       progressText: sealed ? progress + ' of ' + k + ' shares submitted' : 'Threshold met: key rebuilt'
     };

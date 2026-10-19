@@ -7,15 +7,17 @@ export interface NavItem {
 
 const INITIALIZE: NavItem = { to: '/init', label: 'Initialize' }
 const UNSEAL: NavItem = { to: '/unseal', label: 'Unseal' }
-const WORK: NavItem[] = [
-  { to: '/secrets', label: 'Secrets' },
+// The home screen: always offered, since it says so when the token may see nothing.
+const SECRETS: NavItem = { to: '/secrets', label: 'Secrets' }
+const OPTIONAL: NavItem[] = [
   { to: '/identity', label: 'Identity' },
   { to: '/policies', label: 'Policies' },
 ]
 
 // Only what the current state allows: Initialize until it is done, Unseal
-// after, and the working screens once unsealed and signed in, less any the
-// token surely cannot use (`offered` answers that per screen path).
+// while sealed, and once unsealed and signed in the working screens, less any
+// the token surely cannot use (`offered` answers that per screen path).
+// Sealing is not a screen: the status in the header offers it.
 export function navItems(
   status: Status | null,
   signedIn: boolean,
@@ -23,8 +25,9 @@ export function navItems(
 ): NavItem[] {
   if (status === null) return []
   if (!status.initialized) return [INITIALIZE]
-  if (status.sealed || !signedIn) return [UNSEAL]
-  return [UNSEAL, ...WORK.filter((item) => offered(item.to))]
+  if (status.sealed) return [UNSEAL]
+  if (!signedIn) return []
+  return [SECRETS, ...OPTIONAL.filter((item) => offered(item.to))]
 }
 
 // Where the console opens: the first step the instance still needs. Null

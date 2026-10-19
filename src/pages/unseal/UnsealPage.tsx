@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router'
-import { useCan } from '../../api/capabilities/capabilities'
-import { resources } from '../../api/capabilities/resources'
 import { type Status, api, applyStatus, refreshStatus, server } from '../../api/client'
 import { call, messageText } from '../../api/result'
 import { token } from '../../api/session'
@@ -32,7 +30,6 @@ export function UnsealPage() {
 
 function UnsealCard({ status, at }: { status: Status; at: number | null }) {
   const signedIn = useStore(token) !== null
-  const canSeal = useCan('update', resources.seal)
   const [share, setShare] = useState('')
   const [sending, setSending] = useState(false)
   // The last outcome worth saying in place; cleared by the next action.
@@ -88,10 +85,15 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
           </div>
           <div className="unseal__state-text">
             <h2 id="state-h">Unsealed</h2>
-            <p>The key is rebuilt and in memory. Sealing discards it; the shares are needed again.</p>
+            <p>
+              The key is rebuilt and in memory. To seal, open <strong>Unsealed</strong> at the top right; the shares are
+              needed again after.
+            </p>
           </div>
           {signedIn ? (
-            canSeal && <SealButton />
+            <Link className="button button--primary button--lg" to="/secrets">
+              Go to Secrets
+            </Link>
           ) : (
             <Link className="button button--primary button--lg" to="/login">
               Sign in
@@ -196,34 +198,6 @@ function UnsealCard({ status, at }: { status: Status; at: number | null }) {
   )
 }
 
-function SealButton() {
-  const [sealing, setSealing] = useState(false)
-  const [errors, setErrors] = useState<string[]>([])
-
-  const seal = async () => {
-    setSealing(true)
-    setErrors([])
-    const res = await call(api.POST('/sys/seal'))
-    setSealing(false)
-    // A refused seal (no `update` on system/seal) is said here; a 401 ends
-    // the session globally.
-    if (!res.ok && res.error.kind === 'http' && res.error.status !== 401) setErrors(res.error.messages)
-    void refreshStatus()
-  }
-
-  return (
-    <div className="unseal__seal">
-      <button type="button" className="button button--primary button--lg" disabled={sealing} onClick={() => void seal()}>
-        Seal now
-      </button>
-      {errors.length > 0 && (
-        <span className="field__hint field__hint--error" role="alert">
-          {messageText(errors)}
-        </span>
-      )}
-    </div>
-  )
-}
 
 function ProgressBar({ filled, threshold, unsealed, label }: { filled: number; threshold: number; unsealed: boolean; label: string }) {
   const tone = unsealed ? 'unseal__seg--done' : 'unseal__seg--filled'

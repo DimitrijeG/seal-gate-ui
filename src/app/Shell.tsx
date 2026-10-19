@@ -13,10 +13,9 @@ import { StatusPill } from './StatusPill'
 import { TracePanel } from './TracePanel'
 import './Shell.css'
 
-// The resources behind each working screen; a screen is offered while the
-// token may do anything under one of them.
+// The resources behind each optional screen; a screen is offered while the
+// token may do anything under one of them. Secrets is always offered.
 const AREAS: Record<string, string[]> = {
-  '/secrets': ['secrets/'],
   '/identity': [resources.entities, resources.groups, resources.users],
   '/policies': [resources.policies],
 }
@@ -110,7 +109,7 @@ export function Shell() {
             </>
           )}
           <div className="app-header__end">
-            <StatusPill status={status} />
+            <StatusPill status={status} signedIn={signedIn} />
           </div>
         </div>
       </header>

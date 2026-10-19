@@ -118,7 +118,9 @@ export function SecretsPage() {
       <div className="secrets-body">
         <section className="secrets-browse" aria-label="Browse secrets">
           {from === null ? null : nothing ? (
-            <p className="muted secrets-browse__message">This token may not list or read any secrets.</p>
+            <p className="muted secrets-browse__message">
+              This token may not see any secrets. An administrator can grant access with a policy.
+            </p>
           ) : listFault ? (
             <ServerFault className="secrets-browse__message" onRetry={reload} />
           ) : listError !== null ? (

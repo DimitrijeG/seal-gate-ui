@@ -121,6 +121,14 @@ test('unseal, unsealed', async ({ page, request }) => {
   await shot(page, 'unseal-unsealed', [polled(page)])
 })
 
+test('seal, from the header', async ({ page, request }) => {
+  await fixtures(request)
+  await signIn(page, '/secrets')
+  await page.getByRole('button', { name: 'Unsealed' }).click()
+  await expect(page.getByRole('button', { name: 'Seal now' })).toBeVisible()
+  await shot(page, 'seal-popover')
+})
+
 test('secrets', async ({ page, request }) => {
   await fixtures(request)
   await signIn(page, '/secrets/')

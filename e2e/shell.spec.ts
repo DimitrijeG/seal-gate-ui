@@ -92,7 +92,30 @@ test('once unsealed, it asks to sign in, and then offers the working screens', a
   await page.evaluate((t) => sessionStorage.setItem('seal-gate.token', t), rootToken)
   await page.goto('/')
   await expect(page).toHaveURL('/secrets')
-  await expect(nav(page)).toHaveText(['Unseal', 'Secrets', 'Identity', 'Policies'])
+  await expect(nav(page)).toHaveText(['Secrets', 'Identity', 'Policies'])
+})
+
+test('the Unsealed pill opens what there is to know about the seal, and closes', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate((t) => sessionStorage.setItem('seal-gate.token', t), rootToken)
+  await page.goto('/secrets')
+  const pill = page.getByRole('button', { name: 'Unsealed' })
+  const panel = page.getByRole('group', { name: 'Seal' })
+
+  await pill.focus()
+  await page.keyboard.press('Enter')
+  await expect(pill).toHaveAttribute('aria-expanded', 'true')
+  await expect(panel).toContainText('rebuilt from 2 of 3 shares')
+  await expect(panel.getByRole('button', { name: 'Seal now' })).toBeVisible()
+
+  // Escape closes it and gives focus back; so does a click anywhere else.
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  await expect(pill).toBeFocused()
+  await pill.click()
+  await expect(panel).toBeVisible()
+  await page.getByRole('heading', { name: 'Secrets' }).click()
+  await expect(panel).toHaveCount(0)
 })
 
 test('sealing while working pauses the page behind a banner', async ({ page, request }) => {

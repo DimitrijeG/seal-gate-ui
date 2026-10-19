@@ -45,13 +45,6 @@
   color: var(--ink-muted);
 }
 
-.unseal__seal {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
 .unseal__progress {
   display: flex;
   flex-direction: column;

@@ -95,10 +95,12 @@ test('meeting the threshold unseals, and signed out it points to Sign in', async
   await expect(page).toHaveURL('/login')
 })
 
-test('signed in, Seal now seals the instance', async ({ page }) => {
+test('signed in, it points to Secrets, and the pill in the header seals', async ({ page }) => {
   await page.goto('/unseal')
   await page.evaluate((t) => sessionStorage.setItem('seal-gate.token', t), rootToken)
   await page.reload()
+  await expect(page.getByRole('link', { name: 'Go to Secrets' })).toBeVisible()
+  await page.getByRole('button', { name: 'Unsealed' }).click()
   await page.getByRole('button', { name: 'Seal now' }).click()
   await expect(page.getByRole('heading', { name: 'Sealed', level: 2 })).toBeVisible()
   await expect(page.getByText('0 of 2 shares submitted', { exact: true })).toBeVisible()
