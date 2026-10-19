@@ -55,8 +55,8 @@ export function PoliciesPage() {
       <div className="page-head">
         <h1>Policies</h1>
         <p>
-          A rule grants capabilities on a path, matched exactly or as a prefix ending in <code>*</code>. Every matching
-          rule applies, and a matching deny refuses whatever else is granted.
+          A rule grants capabilities on part of seal-gate: every secret, a folder of them, one item, or a list. Every
+          matching rule applies, and a matching deny refuses whatever else is granted.
         </p>
       </div>
 

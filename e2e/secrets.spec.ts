@@ -1,5 +1,6 @@
 import { type APIRequestContext, type Page, expect, test } from '@playwright/test'
 import { freshSealGate } from './seal-gate.ts'
+import { choose } from './select.ts'
 
 const gate = freshSealGate()
 let root: Record<string, string> = {}
@@ -94,7 +95,7 @@ test('filtering narrows the folder, or searches every path', async ({ page }) =>
   await page.getByLabel('Filter').fill('billing')
   await expect(rows(page)).toHaveText(['billing-user'])
 
-  await page.getByLabel('Search in').selectOption('all')
+  await choose(page.getByLabel('Search in'), 'In all paths')
   await page.getByLabel('Filter').fill('r')
   await expect(rows(page)).toHaveText(['db/postgres/app-user', 'db/postgres/billing-user', 'db/redis'])
 })
@@ -112,7 +113,7 @@ test('a new secret can be stored or generated, never over an existing one', asyn
   await path.fill('dev/token')
   await page.getByLabel('Value').fill('abc')
   await page.getByLabel(/Expires after/).fill('1')
-  await page.getByLabel('Unit').selectOption('hours')
+  await choose(page.getByLabel('Unit'), 'hours')
   await page.getByRole('button', { name: 'Store secret' }).click()
   await expect(page).toHaveURL('/secrets/dev/token')
   await expect(detail(page).getByText('Stored · 3 bytes')).toBeVisible()

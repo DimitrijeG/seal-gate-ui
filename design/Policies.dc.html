@@ -43,7 +43,7 @@ Unsealed
 
 <div style="display: flex; flex-direction: column; gap: 4px">
 <h1 style="margin: 0; font-size: 32px; line-height: 1.2; font-weight: 600">Policies</h1>
-<p style="margin: 0; color: #4A5568; max-width: 760px">A rule grants capabilities on a path, matched exactly or as a prefix ending in <code style="font-family: 'IBM Plex Mono', monospace">*</code>. Every matching rule applies, and a matching deny refuses whatever else is granted.</p>
+<p style="margin: 0; color: #4A5568; max-width: 760px">A rule grants capabilities on part of seal-gate: every secret, a folder of them, one item, or a list. Every matching rule applies, and a matching deny refuses whatever else is granted.</p>
 </div>
 
 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
@@ -81,7 +81,7 @@ Unsealed
 <div style="position: relative; display: flex; align-items: center">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 12px"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
 <label for="rule-filter" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Filter rules</label>
-<input id="rule-filter" type="search" placeholder="Filter rules by path" style="width: 220px; min-height: 44px; padding: 0 12px 0 36px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 14px; font-family: 'IBM Plex Mono', monospace">
+<input id="rule-filter" type="search" placeholder="Filter rules" style="width: 220px; min-height: 44px; padding: 0 12px 0 36px; border: 1px solid #B6C2D2; border-radius: 8px; font-size: 14px; font-family: 'IBM Plex Mono', monospace">
 </div>
 <div role="group" aria-label="View" style="display: flex; padding: 3px; border-radius: 10px; background: #E6ECF3">
 <button type="button" aria-pressed="true" style="min-height: 38px; padding: 0 14px; border-radius: 8px; border: 0; background: #FFFFFF; color: #0F1B2D; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px rgba(15,27,45,0.15); cursor: pointer">Rules</button>
@@ -91,18 +91,26 @@ Unsealed
 </div>
 
 <div style="overflow-x: auto">
-<div role="table" aria-label="Rules of dev-read" style="min-width: 780px; display: flex; flex-direction: column">
-<div role="row" style="display: grid; grid-template-columns: minmax(220px, 1fr) repeat(8, 56px) 52px; align-items: end; padding: 12px 16px 8px 24px; border-bottom: 1px solid #E6ECF3; font-size: 12px; color: #4A5568; text-align: center">
-<span role="columnheader" style="text-align: left; font-size: 13px">Path</span>
-<span role="columnheader">create</span><span role="columnheader">read</span><span role="columnheader">update</span><span role="columnheader">delete</span><span role="columnheader">list</span><span role="columnheader">rotate</span><span role="columnheader">manage</span><span role="columnheader" style="color: #9B2C22; font-weight: 600">deny</span>
+<div role="table" aria-label="Rules of dev-read" style="min-width: 860px; display: flex; flex-direction: column">
+<div role="row" style="display: grid; grid-template-columns: minmax(360px, 1fr) repeat(7, 56px) 52px; align-items: end; padding: 12px 16px 8px 24px; border-bottom: 1px solid #E6ECF3; font-size: 12px; color: #4A5568; text-align: center">
+<span role="columnheader" style="text-align: left; font-size: 13px">Applies to</span>
+<span role="columnheader">create</span><span role="columnheader">read</span><span role="columnheader">update</span><span role="columnheader">delete</span><span role="columnheader">list</span><span role="columnheader">rotate</span><span role="columnheader" style="color: #9B2C22; font-weight: 600">deny</span>
 <span role="columnheader"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Remove</span></span>
 </div>
-<sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
-<div role="row" style="display: grid; grid-template-columns: minmax(220px, 1fr) repeat(8, 56px) 52px; align-items: center; padding: 6px 16px 6px 24px; border-bottom: 1px solid #EEF2F7; {{ r.rowStyle }}">
-<span role="cell" style="padding-right: 12px"><input type="text" value="{{ r.path }}" aria-label="{{ r.pathLabel }}" style="width: 100%; box-sizing: border-box; min-height: 40px; padding: 0 10px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; {{ r.inputStyle }}"></span>
-<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="8">
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+<div role="row" style="display: grid; grid-template-columns: minmax(360px, 1fr) repeat(7, 56px) 52px; align-items: center; padding: 8px 16px 8px 24px; border-bottom: 1px solid #EEF2F7; {{ r.rowStyle }}">
+<span role="cell" style="padding-right: 12px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; gap: 6px">
+<select aria-label="{{ r.areaLabel }}" style="min-height: 40px; padding: 0 8px; border-radius: 8px; font-size: 14px; background: #FFFFFF; {{ r.inputStyle }}"><option>{{ r.area }}</option></select>
+<sc-if value="{{ r.hasScope }}" hint-placeholder-val="{{ true }}"><select aria-label="{{ r.scopeLabel }}" style="min-height: 40px; padding: 0 8px; border-radius: 8px; font-size: 14px; background: #FFFFFF; {{ r.inputStyle }}"><option>{{ r.scope }}</option></select></sc-if>
+<sc-if value="{{ r.hasTarget }}" hint-placeholder-val="{{ true }}"><input type="text" value="{{ r.target }}" aria-label="{{ r.targetLabel }}" style="flex: 1; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 0 10px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; {{ r.inputStyle }}"></sc-if>
+</span>
+<span style="font-size: 13px; color: #4A5568">{{ r.words }}</span>
+</span>
+<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
 <span role="cell" style="display: flex; justify-content: center">
-<button type="button" aria-pressed="{{ c.pressed }}" aria-label="{{ c.label }}" onClick="{{ c.toggle }}" style="width: 36px; height: 36px; border-radius: 9px; border-width: 1.5px; border-style: solid; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 120ms; {{ c.style }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button>
+<sc-if value="{{ c.none }}" hint-placeholder-val="{{ false }}"><span title="Not checked here" style="color: #4A5568; opacity: 0.6">–</span></sc-if>
+<sc-if value="{{ c.some }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="{{ c.pressed }}" aria-label="{{ c.label }}" onClick="{{ c.toggle }}" style="width: 36px; height: 36px; border-radius: 9px; border-width: 1.5px; border-style: solid; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 120ms; {{ c.style }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button></sc-if>
 </span>
 </sc-for>
 <span role="cell" style="display: flex; justify-content: flex-end"><button type="button" aria-label="{{ r.removeLabel }}" style="width: 40px; height: 40px; border-radius: 8px; border: 0; background: transparent; color: #4A5568; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l1 12h8l1-12"></path></svg></button></span>
@@ -113,7 +121,7 @@ Unsealed
 
 <div style="padding: 12px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
 <button type="button" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px dashed #0E7490; background: #FFFFFF; color: #0E6582; font-size: 14px; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Add rule</button>
-<span style="font-size: 13px; color: #4A5568">Click a square to grant or remove. Tinted rows deny, and deny wins.</span>
+<span style="font-size: 13px; color: #4A5568">Pick what a rule applies to, then click a square to grant or remove. Tinted rows deny, and deny wins.</span>
 </div>
 
 <sc-if value="{{ dirty }}" hint-placeholder-val="{{ true }}">
@@ -182,42 +190,61 @@ Unsealed
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
 class Component extends DCLogic {
   renderVals() {
-    const caps = ['create', 'read', 'update', 'delete', 'list', 'rotate', 'manage', 'deny'];
+    const caps = ['create', 'read', 'update', 'delete', 'list', 'rotate', 'deny'];
+    // Each rule as the editor shows it: area, scope, target, and the rule in words.
+    // allowed lists what seal-gate checks there; other columns show a dash.
+    const secrets = ['create', 'read', 'update', 'delete', 'list', 'rotate', 'deny'];
     const initial = [
-      { path: 'secrets/dev/*', caps: ['read', 'list'] },
-      { path: 'secrets/shared/config/*', caps: ['read', 'list'] },
-      { path: 'secrets/dev/feature-flags', caps: ['read', 'update'] },
-      { path: 'secrets/db/postgres/*', caps: ['list'] },
-      { path: 'secrets/dev/admin-key', caps: ['deny'] },
-      { path: 'secrets/dev/signing/*', caps: ['deny'] }
+      { area: 'Secrets', scope: 'A folder', target: 'dev', field: 'folder', caps: ['read', 'list'], allowed: secrets, what: 'every secret in dev/' },
+      { area: 'Secrets', scope: 'A folder', target: 'shared/config', field: 'folder', caps: ['read', 'list'], allowed: secrets, what: 'every secret in shared/config/' },
+      { area: 'Secrets', scope: 'One secret', target: 'dev/feature-flags', field: 'secret', caps: ['read', 'update'], allowed: secrets, what: 'the secret dev/feature-flags' },
+      { area: 'Secrets', scope: 'A folder', target: 'db/postgres', field: 'folder', caps: ['list'], allowed: secrets, what: 'every secret in db/postgres/' },
+      { area: 'Secrets', scope: 'One secret', target: 'dev/admin-key', field: 'secret', caps: ['deny'], allowed: secrets, what: 'the secret dev/admin-key' },
+      { area: 'Policies', scope: 'The list', target: '', field: '', caps: ['list'], allowed: ['list', 'deny'], what: 'policies' },
+      { area: 'Seal', scope: '', target: '', field: '', caps: ['update'], allowed: ['update', 'deny'], what: 'the seal' }
     ];
     const st = this.state || {};
     const saved = st.saved || initial;
-    const rules = st.rules || [
-      saved[0], saved[1], saved[2], { path: saved[3].path, caps: ['list', 'read'] }, saved[4], { path: saved[5].path, caps: ['deny', 'rotate'] }
-    ];
+    const rules = st.rules || [saved[0], saved[1], saved[2], { ...saved[3], caps: ['list', 'read'] }, saved[4], saved[5], saved[6]];
     const toggle = (i, c) => {
-      const next = rules.map((r, j) => j !== i ? r : { path: r.path, caps: r.caps.includes(c) ? r.caps.filter((x) => x !== c) : [...r.caps, c] });
+      const next = rules.map((r, j) => j !== i ? r : { ...r, caps: r.caps.includes(c) ? r.caps.filter((x) => x !== c) : [...r.caps, c] });
       this.setState({ rules: next });
+    };
+    const verbs = { create: 'create', read: 'read', update: 'change', delete: 'delete', list: 'list', rotate: 'rotate' };
+    const words = (r) => {
+      if (r.caps.includes('deny')) return 'Refuses everything on ' + r.what + ', whatever other rules grant.';
+      if (r.area === 'Seal' && r.caps.includes('update')) return 'Seal the instance.';
+      const v = r.caps.map((c) => verbs[c]).filter(Boolean);
+      if (v.length === 0) return 'Grants nothing yet.';
+      const said = (v.length < 2 ? v[0] : v.slice(0, -1).join(', ') + ' and ' + v[v.length - 1]) + ' ' + r.what + '.';
+      return said[0].toUpperCase() + said.slice(1);
     };
     let changes = 0;
     rules.forEach((r, i) => caps.forEach((c) => { if (r.caps.includes(c) !== saved[i].caps.includes(c)) changes++; }));
     const rows = rules.map((r, i) => {
       const denies = r.caps.includes('deny');
       return {
-        path: r.path,
-        pathLabel: 'Rule ' + (i + 1) + ' path',
+        area: r.area,
+        scope: r.scope,
+        target: r.target,
+        hasScope: r.scope !== '',
+        hasTarget: r.field !== '',
+        areaLabel: 'Rule ' + (i + 1) + ' area',
+        scopeLabel: 'Rule ' + (i + 1) + ' scope',
+        targetLabel: 'Rule ' + (i + 1) + ' ' + r.field,
+        words: words(r),
         removeLabel: 'Remove rule ' + (i + 1),
         rowStyle: denies ? 'background: #FFFAF9' : '',
         inputStyle: denies ? 'border: 1px solid #EBCFCA' : 'border: 1px solid #D5DDE8',
         cells: caps.map((c) => {
           const on = r.caps.includes(c);
+          const shown = on || r.allowed.includes(c);
           const changed = on !== saved[i].caps.includes(c);
           const ring = changed ? '; box-shadow: 0 0 0 3px #B9E1EC' : '';
           const style = on
             ? (c === 'deny' ? 'background: #FCE8E5; border-color: #D9897F; color: #9B2C22' : 'background: #0E7490; border-color: #0E7490; color: #FFFFFF')
             : 'background: #FFFFFF; border-color: #C9D3E0; color: transparent';
-          return { label: 'Rule ' + (i + 1) + ': ' + c, pressed: on ? 'true' : 'false', style: style + ring, toggle: () => toggle(i, c) };
+          return { none: !shown, some: shown, label: 'Rule ' + (i + 1) + ': ' + c, pressed: on ? 'true' : 'false', style: style + ring, toggle: () => toggle(i, c) };
         })
       };
     });

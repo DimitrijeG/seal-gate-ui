@@ -7,8 +7,10 @@ import { api } from '../../api/client'
 import { call, isServerFault, messageText } from '../../api/result'
 import { displayName, identity } from '../../api/session'
 import { useStore } from '../../lib/store'
+import { Select } from '../../ui/Select'
 import { ServerFault } from '../../ui/ServerFault'
-import { COLUMNS, cellChanged, countChanges, nameProblem, ruleProblem, toggle } from './rules'
+import { AREAS, type Area, type Row, type Scope, checked, describe, reshape, rowProblem, scopesOf, targetOf, toRow, toRule } from './areas'
+import { COLUMNS, cellChanged, countChanges, nameProblem, toggle } from './rules'
 
 type Loaded =
   | { state: 'loading' }
@@ -28,13 +30,14 @@ interface PolicyEditorProps {
   onGone: () => void
 }
 
-const EMPTY_RULE: Rule = { path: '', capabilities: [] }
+// A new rule starts on every secret, the commonest thing to grant.
+const EMPTY_ROW: Row = { area: 'secrets', scope: 'all', target: '', capabilities: [] }
 
 export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorProps) {
   const caps = useStore(capabilities)
   const who = useStore(identity)
   const [loaded, setLoaded] = useState<Loaded>(name === null ? { state: 'ok', rules: [] } : { state: 'loading' })
-  const [draft, setDraft] = useState<Rule[]>(name === null ? [EMPTY_RULE] : [])
+  const [draft, setDraft] = useState<Row[]>(name === null ? [EMPTY_ROW] : [])
   const [newName, setNewName] = useState('')
   const [view, setView] = useState<'rules' | 'json'>('rules')
   const [filter, setFilter] = useState('')
@@ -51,7 +54,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
       if (!current) return
       if (res.ok) {
         setLoaded({ state: 'ok', rules: res.data.rules })
-        setDraft(res.data.rules)
+        setDraft(res.data.rules.map(toRow))
       } else if (res.error.kind !== 'http') return
       else if (res.error.status === 404) setLoaded({ state: 'gone' })
       else if (res.error.status === 403) setLoaded({ state: 'forbidden' })
@@ -65,12 +68,14 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
 
   const target = name ?? newName
   const saved = loaded.state === 'ok' ? loaded.rules : []
-  const changes = name === null ? 0 : countChanges(saved, draft)
-  const dirty = name === null ? newName !== '' || countChanges([EMPTY_RULE], draft) > 0 : changes > 0
+  // What the rows write; changes are counted on these, as the server stores them.
+  const rules = draft.map(toRule)
+  const changes = name === null ? 0 : countChanges(saved, rules)
+  const dirty = name === null ? newName !== '' || countChanges([toRule(EMPTY_ROW)], rules) > 0 : changes > 0
   const canEdit = name === null || offers(can(caps, 'update', resources.policy(name)))
   const canDelete = name !== null && offers(can(caps, 'delete', resources.policy(name)))
 
-  const problems = draft.map(ruleProblem)
+  const problems = draft.map(rowProblem)
   const invalid = problems.some((p) => p !== null)
   const nameError = name === null ? (nameProblem(newName) ?? (existing?.includes(newName) ? 'taken' : null)) : null
   const refused = name === null && nameProblem(newName) === null && can(caps, 'update', resources.policy(newName)) === 'no'
@@ -90,18 +95,18 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
     else blocker.reset()
   }, [blocker])
 
-  const update = (row: number, next: Rule) => setDraft(draft.map((r, i) => (i === row ? next : r)))
+  const update = (row: number, next: Row) => setDraft(draft.map((r, i) => (i === row ? next : r)))
 
   const save = async () => {
     if (invalid || nameError !== null || refused) return
     setBusy(true)
     setErrors([])
-    const res = await call(api.PUT('/policies/{name}', { params: { path: { name: target } }, body: { rules: draft } }))
+    const res = await call(api.PUT('/policies/{name}', { params: { path: { name: target } }, body: { rules } }))
     setBusy(false)
     if (res.ok) {
       // The session's own rules may be among these.
       forgetCapabilities()
-      if (name !== null) setLoaded({ state: 'ok', rules: draft })
+      if (name !== null) setLoaded({ state: 'ok', rules })
       else leaving.current = true
       onSaved(target)
     } else if (res.error.kind === 'http') setErrors(res.error.messages)
@@ -154,7 +159,9 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
   }
 
   const needle = filter.trim().toLowerCase()
-  const visible = draft.map((rule, row) => ({ rule, row })).filter(({ rule }) => rule.path.toLowerCase().includes(needle))
+  const visible = draft
+    .map((rule, row) => ({ rule, row }))
+    .filter(({ rule, row }) => `${rules[row]!.path} ${describe(rule)}`.toLowerCase().includes(needle))
   const label = name ?? (newName || 'new policy')
 
   return (
@@ -212,7 +219,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
             <label htmlFor="rule-filter" className="visually-hidden">
               Filter rules
             </label>
-            <input id="rule-filter" type="search" placeholder="Filter rules by path" value={filter} onChange={(e) => setFilter(e.target.value)} />
+            <input id="rule-filter" type="search" placeholder="Filter rules" value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
           <div role="group" aria-label="View" className="segmented">
             <button type="button" aria-pressed={view === 'rules'} onClick={() => setView('rules')}>
@@ -227,7 +234,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
 
       {view === 'json' ? (
         <pre className="policies-json" aria-label={`JSON of ${label}`}>
-          {JSON.stringify({ rules: draft }, null, 2)}
+          {JSON.stringify({ rules }, null, 2)}
         </pre>
       ) : (
         <div className="policies-grid-wrap">
@@ -237,7 +244,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
             <div role="table" aria-label={`Rules of ${label}`} className="policies-grid">
               <div role="row" className="policies-grid__row policies-grid__row--head">
                 <span role="columnheader" className="policies-grid__path-head">
-                  Path
+                  Applies to
                 </span>
                 {COLUMNS.map((c) => (
                   <span key={c} role="columnheader" className={c === 'deny' ? 'policies-grid__deny-head' : undefined}>
@@ -251,30 +258,29 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
               {visible.map(({ rule, row }) => {
                 const denies = rule.capabilities.includes('deny')
                 const problem = problems[row] ?? null
+                const allowed = checked(rule.area, rule.scope)
                 return (
                   <div key={row} role="row" className={`policies-grid__row${denies ? ' policies-grid__row--deny' : ''}`}>
                     <span role="cell" className="policies-grid__path">
-                      <input
-                        type="text"
-                        spellCheck={false}
-                        value={rule.path}
-                        readOnly={!canEdit}
-                        aria-label={`Rule ${row + 1} path`}
-                        aria-invalid={problem !== null && (rule.path !== '' || rule.capabilities.length > 0)}
-                        title={problem ?? undefined}
-                        onChange={(e) => update(row, { ...rule, path: e.target.value })}
-                      />
+                      <AppliesTo row={row} rule={rule} problem={problem} disabled={!canEdit} onChange={(next) => update(row, next)} />
                     </span>
                     {COLUMNS.map((c) => (
                       <span key={c} role="cell" className="policies-grid__cell">
-                        <Square
-                          on={rule.capabilities.includes(c)}
-                          deny={c === 'deny'}
-                          changed={name !== null && cellChanged(saved, draft, row, c)}
-                          disabled={!canEdit}
-                          label={`Rule ${row + 1}: ${c}`}
-                          onToggle={() => update(row, toggle(rule, c))}
-                        />
+                        {allowed.includes(c) || rule.capabilities.includes(c) ? (
+                          <Square
+                            on={rule.capabilities.includes(c)}
+                            deny={c === 'deny'}
+                            changed={name !== null && cellChanged(saved, rules, row, c)}
+                            disabled={!canEdit}
+                            label={`Rule ${row + 1}: ${c}`}
+                            onToggle={() => update(row, toggle(rule, c))}
+                          />
+                        ) : (
+                          // seal-gate never checks this capability here, so a square would grant nothing.
+                          <span className="policies-grid__none" title={`Not checked on ${describeArea(rule.area)}`}>
+                            –
+                          </span>
+                        )}
                       </span>
                     ))}
                     <span role="cell" className="policies-grid__remove">
@@ -298,14 +304,16 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
 
       {canEdit && view === 'rules' && (
         <div className="policies-editor__add">
-          <button type="button" className="add-chip" onClick={() => setDraft([...draft, EMPTY_RULE])}>
+          <button type="button" className="add-chip" onClick={() => setDraft([...draft, EMPTY_ROW])}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14" />
               <path d="M5 12h14" />
             </svg>
             Add rule
           </button>
-          <span className="field__hint">Click a square to grant or remove. Tinted rows deny, and deny wins.</span>
+          <span className="field__hint">
+            Pick what a rule applies to, then click a square to grant or remove. Tinted rows deny, and deny wins.
+          </span>
         </div>
       )}
 
@@ -326,7 +334,7 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
           </span>
           <div className="policies-editor__buttons">
             {name !== null && (
-              <button type="button" className="button button--quiet button--lg" disabled={busy} onClick={() => setDraft(saved)}>
+              <button type="button" className="button button--quiet button--lg" disabled={busy} onClick={() => setDraft(saved.map(toRow))}>
                 Discard
               </button>
             )}
@@ -367,6 +375,66 @@ export function PolicyEditor({ name, existing, onSaved, onGone }: PolicyEditorPr
         </div>
       ) : null}
     </section>
+  )
+}
+
+function describeArea(area: Area): string {
+  return AREAS.find((a) => a.area === area)!.label.toLowerCase()
+}
+
+interface AppliesToProps {
+  row: number
+  rule: Row
+  problem: string | null
+  disabled: boolean
+  onChange: (next: Row) => void
+}
+
+// What one rule applies to: an area, how much of it, and the folder, path,
+// ID or name that needs; with the rule in words underneath.
+function AppliesTo({ row, rule, problem, disabled, onChange }: AppliesToProps) {
+  const scopes = scopesOf(rule.area)
+  const field = targetOf(rule.area, rule.scope)
+  // A half-typed target is not flagged until there is something to flag.
+  const flagged = problem !== null && (rule.target !== '' || rule.capabilities.length > 0)
+  return (
+    <div className="applies">
+      <div className="applies__controls">
+        <Select<Area>
+          className="applies__select"
+          label={`Rule ${row + 1} area`}
+          value={rule.area}
+          disabled={disabled}
+          options={AREAS.map((a) => ({ value: a.area, label: a.label }))}
+          onChange={(area) => onChange(reshape(rule, area))}
+        />
+        {scopes.length > 1 && (
+          <Select<Scope>
+            className="applies__select"
+            label={`Rule ${row + 1} scope`}
+            value={rule.scope}
+            disabled={disabled}
+            options={scopes.map((s) => ({ value: s.scope, label: s.label }))}
+            onChange={(scope) => onChange(reshape(rule, rule.area, scope))}
+          />
+        )}
+        {field !== null && (
+          <input
+            type="text"
+            className="applies__target"
+            spellCheck={false}
+            placeholder={field}
+            value={rule.target}
+            readOnly={disabled}
+            aria-label={`Rule ${row + 1} ${field}`}
+            aria-invalid={flagged}
+            title={problem ?? undefined}
+            onChange={(e) => onChange({ ...rule, target: e.target.value })}
+          />
+        )}
+      </div>
+      <span className="applies__words">{describe(rule)}</span>
+    </div>
   )
 }
 
